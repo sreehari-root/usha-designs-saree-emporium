@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,13 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				usha: {
+					burgundy: '#8C1F28',
+					gold: '#D4AF37',
+					cream: '#FAF3DD',
+					rose: '#C77B7E',
+					dark: '#1A0D0F'
 				}
 			},
 			borderRadius: {
@@ -84,11 +92,44 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				shimmer: {
+					from: {
+						backgroundPosition: '0 0'
+					},
+					to: {
+						backgroundPosition: '-200% 0'
+					}
+				},
+				'fade-in': {
+					from: {
+						opacity: '0',
+						transform: 'translateY(10px)'
+					},
+					to: {
+						opacity: '1',
+						transform: 'translateY(0)'
+					}
+				},
+				'slide-in-right': {
+					from: {
+						transform: 'translateX(100%)'
+					},
+					to: {
+						transform: 'translateX(0)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				shimmer: 'shimmer 2s linear infinite',
+				'fade-in': 'fade-in 0.5s ease-out',
+				'slide-in-right': 'slide-in-right 0.3s ease-out'
+			},
+			fontFamily: {
+				'cormorant': ['"Cormorant Garamond"', 'serif'],
+				'poppins': ['Poppins', 'sans-serif']
 			}
 		}
 	},

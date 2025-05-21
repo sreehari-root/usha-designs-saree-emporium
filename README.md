@@ -1,73 +1,100 @@
-# Welcome to your Lovable project
 
-## Project info
+# Usha Designs - The Designer Lane
 
-**URL**: https://lovable.dev/projects/8fd643be-eb6c-46d6-b5cb-d643676200fb
+## Project Overview
 
-## How can I edit this code?
+Usha Designs is an elegant e-commerce platform specializing in traditional Indian ethnic wear, particularly sarees and designer sets. The website features a comprehensive collection of various fabric types and styles, from silk sarees to designer kurtis.
 
-There are several ways of editing your application.
+## Key Features
 
-**Use Lovable**
+- Beautiful, responsive UI with a traditional yet modern Indian aesthetic
+- Product categories and browsing features
+- User authentication (login/signup)
+- Admin dashboard with product management capabilities
+- Shopping cart functionality
+- Search and filter options
+- Wishlist management
+- Responsive design for all devices
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/8fd643be-eb6c-46d6-b5cb-d643676200fb) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
+## Technology Stack
 
 This project is built with:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- React & TypeScript
+- Vite for fast development
+- Tailwind CSS for styling
+- shadcn-ui for UI components
+- React Router Dom for navigation
+- React Query for data fetching
+- Supabase integration for backend functionality (coming soon)
 
-## How can I deploy this project?
+## Admin Access
 
-Simply open [Lovable](https://lovable.dev/projects/8fd643be-eb6c-46d6-b5cb-d643676200fb) and click on Share -> Publish.
+Default admin credentials:
+- Email: admin@admin.com
+- Password: Admin@123
 
-## Can I connect a custom domain to my Lovable project?
+## Product Categories
 
-Yes, you can!
+Usha Designs currently offers the following product categories:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+1. Pure Linen Sarees
+2. Chanderi Kotta Sarees
+3. Georgette Sarees
+4. Crepe Silk Sarees
+5. Bandhini Sarees
+6. Handloom Cotton Sarees
+7. Silk & Semi-Silk Sarees
+8. Organza Sarees
+9. Jute Silk Sarees
+10. Crispy Georgette Sarees
+11. Uppada Silk Sarees
+12. Pure Chander Sarees
+13. Georgette with Banarasi Weave Sarees
+14. Pure Kanchi silk
+15. Pure Tusser silk
+16. Gicha silk
+17. Handloom cotton silk (Mangalagiri)
+18. Raw mango silk
+19. Pure pathani silk
+20. Benarasi silk
+21. Hand embroidery sarees
+22. Ready blouse sarees
+23. Designer Kurtis and 3Pc sets
+24. Dress materials
+25. Ready blouses
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## Running the Project
+
+Follow these steps to run the project locally:
+
+```sh
+# Clone the repository
+git clone <repository-url>
+
+# Navigate to the project directory
+cd usha-designs
+
+# Install dependencies
+npm install
+
+# Start the development server
+npm run dev
+```
+
+## Deployment
+
+The project can be deployed to any static site hosting service like Netlify, Vercel, or GitHub Pages.
+
+## Future Enhancements
+
+1. Integration with Supabase for backend functionality
+2. Enhanced product filtering and search
+3. Order tracking and management
+4. Customer reviews and ratings
+5. Product recommendations
+6. Expanded payment options
+
+## License
+
+This project is proprietary and confidential. All rights reserved.
