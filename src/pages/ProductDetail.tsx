@@ -113,8 +113,8 @@ export default function ProductDetail() {
           created_at: review.created_at,
           profiles: review.profiles && typeof review.profiles === 'object' 
             ? { 
-                first_name: review.profiles.first_name || null, 
-                last_name: review.profiles.last_name || null 
+                first_name: review.profiles?.first_name || null, 
+                last_name: review.profiles?.last_name || null 
               } 
             : { first_name: null, last_name: null }
         }));
