@@ -7,6 +7,7 @@ import FeaturedProducts from '@/components/home/FeaturedProducts';
 import BestSelling from '@/components/home/BestSelling';
 import Testimonials from '@/components/home/Testimonials';
 import NewsletterSection from '@/components/home/NewsletterSection';
+import { Button } from '@/components/ui/button';
 
 export default function Index() {
   return (

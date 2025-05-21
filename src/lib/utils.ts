@@ -23,22 +23,23 @@ export function truncateText(text: string, maxLength: number): string {
   return text.substring(0, maxLength) + '...';
 }
 
-export function getStarRating(rating: number): React.ReactNode[] {
+// Changed to return an array of objects instead of JSX
+export function getStarRating(rating: number): { type: string; key: string }[] {
   const stars = [];
   const fullStars = Math.floor(rating);
   const hasHalfStar = rating % 1 >= 0.5;
   
   for (let i = 0; i < fullStars; i++) {
-    stars.push(<span key={`star-${i}`} className="text-yellow-500">★</span>);
+    stars.push({ type: 'full', key: `star-${i}` });
   }
   
   if (hasHalfStar) {
-    stars.push(<span key="half-star" className="text-yellow-500">★</span>);
+    stars.push({ type: 'half', key: 'half-star' });
   }
   
   const remainingStars = 5 - stars.length;
   for (let i = 0; i < remainingStars; i++) {
-    stars.push(<span key={`empty-${i}`} className="text-gray-300">★</span>);
+    stars.push({ type: 'empty', key: `empty-${i}` });
   }
   
   return stars;

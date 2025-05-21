@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency, calculateDiscountPrice } from '@/lib/utils';
+import { formatCurrency, calculateDiscountPrice, getStarRating } from '@/lib/utils';
 
 interface ProductCardProps {
   id: number;
@@ -31,6 +31,20 @@ export default function ProductCard({
 }: ProductCardProps) {
   // Calculate discounted price
   const finalPrice = discount ? calculateDiscountPrice(price, discount) : price;
+  
+  // Render star rating if provided
+  const renderStarRating = () => {
+    if (!rating) return null;
+    
+    return getStarRating(rating).map(star => (
+      <span 
+        key={star.key} 
+        className={star.type === 'empty' ? 'text-gray-300' : 'text-yellow-500'}
+      >
+        ★
+      </span>
+    ));
+  };
   
   return (
     <div className="product-card group rounded-lg border bg-card text-card-foreground overflow-hidden">
@@ -77,6 +91,15 @@ export default function ProductCard({
             <p className="text-muted-foreground text-sm mt-1">
               {category}
             </p>
+            
+            {rating && (
+              <div className="flex items-center mt-1">
+                {renderStarRating()}
+                <span className="ml-1 text-xs text-muted-foreground">
+                  ({rating.toFixed(1)})
+                </span>
+              </div>
+            )}
           </div>
         </div>
         
