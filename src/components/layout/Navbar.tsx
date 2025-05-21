@@ -1,11 +1,13 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Menu, X, ShoppingBag, User, Search } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Menu, X, ShoppingBag, User, Search, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ushaLogo } from '@/lib/constants';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const categoryLinks = [
   { name: 'Pure Silk', path: '/category/pure-silk' },
@@ -16,9 +18,29 @@ const categoryLinks = [
   { name: 'New Arrivals', path: '/new-arrivals' },
 ];
 
-export default function Navbar({ user }: { user?: any }) {
+export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0); // This would be from a context in a real app
+  const { user, signOut, isAdmin } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const handleSignOut = async () => {
+    await signOut();
+    setIsMenuOpen(false);
+    navigate('/');
+    toast({
+      title: "Logged out",
+      description: "You have been signed out successfully",
+    });
+  };
+
+  const getUserInitial = () => {
+    if (user?.user_metadata?.first_name) {
+      return user.user_metadata.first_name.charAt(0).toUpperCase();
+    }
+    return user?.email?.charAt(0).toUpperCase() || "U";
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
@@ -80,9 +102,9 @@ export default function Navbar({ user }: { user?: any }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={user.imageUrl} alt={user.name} />
+                      <AvatarImage src={user.user_metadata?.avatar_url} alt={user.user_metadata?.first_name} />
                       <AvatarFallback className="bg-usha-rose text-white">
-                        {user.name?.charAt(0) || "U"}
+                        {getUserInitial()}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -97,14 +119,19 @@ export default function Navbar({ user }: { user?: any }) {
                   <DropdownMenuItem asChild>
                     <Link to="/wishlist">Wishlist</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/logout">Logout</Link>
+                  {isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin/dashboard">Admin Dashboard</Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <Button variant="outline" size="sm" className="border-usha-burgundy text-usha-burgundy hover:bg-usha-burgundy hover:text-white">
-                <Link to="/login">Login</Link>
+                <Link to="/auth">Login</Link>
               </Button>
             )}
             
@@ -129,24 +156,31 @@ export default function Navbar({ user }: { user?: any }) {
             {!user ? (
               <div className="flex space-x-4">
                 <Button asChild variant="default" className="flex-1 bg-usha-burgundy hover:bg-usha-burgundy/90">
-                  <Link to="/login">Login</Link>
+                  <Link to="/auth">Login</Link>
                 </Button>
                 <Button asChild variant="outline" className="flex-1 border-usha-burgundy text-usha-burgundy">
-                  <Link to="/register">Register</Link>
+                  <Link to="/auth?tab=signup">Register</Link>
                 </Button>
               </div>
             ) : (
-              <div className="flex items-center space-x-4 py-2">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={user.imageUrl} alt={user.name} />
-                  <AvatarFallback className="bg-usha-rose text-white">
-                    {user.name?.charAt(0) || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">{user.email}</p>
+              <div className="flex items-center justify-between py-2">
+                <div className="flex items-center space-x-4">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={user.user_metadata?.avatar_url} alt={user.user_metadata?.first_name} />
+                    <AvatarFallback className="bg-usha-rose text-white">
+                      {getUserInitial()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-sm font-medium">
+                      {user.user_metadata?.first_name} {user.user_metadata?.last_name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                  </div>
                 </div>
+                <Button variant="ghost" size="icon" onClick={handleSignOut}>
+                  <LogOut size={20} />
+                </Button>
               </div>
             )}
             
@@ -185,9 +219,17 @@ export default function Navbar({ user }: { user?: any }) {
                 <Link to="/wishlist" className="block py-2" onClick={() => setIsMenuOpen(false)}>
                   Wishlist
                 </Link>
-                <Link to="/logout" className="block py-2" onClick={() => setIsMenuOpen(false)}>
+                {isAdmin && (
+                  <Link to="/admin/dashboard" className="block py-2" onClick={() => setIsMenuOpen(false)}>
+                    Admin Dashboard
+                  </Link>
+                )}
+                <button 
+                  className="block w-full text-left py-2 text-red-600" 
+                  onClick={handleSignOut}
+                >
                   Logout
-                </Link>
+                </button>
               </div>
             )}
           </div>

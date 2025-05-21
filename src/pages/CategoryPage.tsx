@@ -1,230 +1,345 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import {
+  Slider,
+  SliderTrack,
+  SliderThumb,
+  SliderRange,
+} from "@/components/ui/slider"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Checkbox } from "@/components/ui/checkbox"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { AspectRatio } from "@/components/ui/aspect-ratio"
+import { Badge } from "@/components/ui/badge"
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ChevronDown, ChevronsUpDown } from "lucide-react"
 import MainLayout from '@/components/layout/MainLayout';
-import ProductCard from '@/components/products/ProductCard';
-import { supabase } from '@/integrations/supabase/client';
-import { Separator } from '@/components/ui/separator';
-import { Slider } from '@/components/ui/slider';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Button } from '@/components/ui/button';
-import { Filter, SlidersHorizontal, ArrowUpDown, Loader2 } from 'lucide-react';
+import { mockProducts } from '@/lib/constants';
 
-type Product = {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  discount: number;
-  category: string;
-  image: string | null;
-  stock: number;
-  rating: number;
-  bestseller: boolean;
-  featured: boolean;
-};
+const CategoryPage = () => {
+  const { category } = useParams<{ category: string }>();
+  const [products, setProducts] = useState(mockProducts);
+  const [filteredProducts, setFilteredProducts] = useState(mockProducts);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'default'>('default');
+  const [availableSizes, setAvailableSizes] = useState(Array.from(new Set(mockProducts.map(product => product.size).flat())));
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+  const [priceRange, setPriceRange] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 12;
 
-export default function CategoryPage() {
-  const { category } = useParams();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [priceRange, setPriceRange] = useState<number[]>([0, 50000]);
-  const [sortBy, setSortBy] = useState('price-asc');
-  const [filterOpen, setFilterOpen] = useState(false);
-  const categoryName = category ? category.replace(/-/g, ' ') : '';
+  const [availableColors] = useState(Array.from(new Set(mockProducts.map(product => product.color))));
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
 
-  const fetchProducts = async () => {
-    setLoading(true);
-    let query = supabase
-      .from('products')
-      .select('*');
-    
-    // Apply category filter if we're on a category page
+  const [minPrice, setMinPrice] = useState(Math.min(...mockProducts.map(product => product.price)));
+  const [maxPrice, setMaxPrice] = useState(Math.max(...mockProducts.map(product => product.price)));
+  const [priceFilterRange, setPriceFilterRange] = useState([minPrice, maxPrice]);
+
+  useEffect(() => {
     if (category) {
-      // Convert slug back to category name format and use ILIKE for case-insensitive partial matching
-      const categorySearch = categoryName.toLowerCase();
-      query = query.ilike('category', `%${categorySearch}%`);
-    }
-
-    // Apply price filter
-    query = query.gte('price', priceRange[0]).lte('price', priceRange[1]);
-
-    // Apply sorting
-    switch (sortBy) {
-      case 'price-asc':
-        query = query.order('price', { ascending: true });
-        break;
-      case 'price-desc':
-        query = query.order('price', { ascending: false });
-        break;
-      case 'newest':
-        query = query.order('created_at', { ascending: false });
-        break;
-      case 'rating':
-        query = query.order('rating', { ascending: false });
-        break;
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Error fetching products:', error);
+      const categoryProducts = mockProducts.filter(product =>
+        product.categories.map(c => c.toLowerCase()).includes(category.toLowerCase())
+      );
+      setProducts(categoryProducts);
+      setFilteredProducts(categoryProducts);
+      setAvailableSizes(Array.from(new Set(categoryProducts.map(product => product.size).flat())));
+      setMinPrice(Math.min(...categoryProducts.map(product => product.price)));
+      setMaxPrice(Math.max(...categoryProducts.map(product => product.price)));
+      setPriceFilterRange([Math.min(...categoryProducts.map(product => product.price)), Math.max(...categoryProducts.map(product => product.price))]);
     } else {
-      setProducts(data || []);
+      setProducts(mockProducts);
+      setFilteredProducts(mockProducts);
+      setAvailableSizes(Array.from(new Set(mockProducts.map(product => product.size).flat())));
+      setMinPrice(Math.min(...mockProducts.map(product => product.price)));
+      setMaxPrice(Math.max(...mockProducts.map(product => product.price)));
+      setPriceFilterRange([Math.min(...mockProducts.map(product => product.price)), Math.max(...mockProducts.map(product => product.price))]);
     }
-    setLoading(false);
+    setCurrentPage(1); // Reset to first page when category changes
+  }, [category]);
+
+  // Sorting function
+  const sortProducts = useCallback((productsToSort: any[]) => {
+    let sortedProducts = [...productsToSort];
+    switch (sortOrder) {
+      case 'asc':
+        sortedProducts.sort((a, b) => a.price - b.price);
+        break;
+      case 'desc':
+        sortedProducts.sort((a, b) => b.price - a.price);
+        break;
+      default:
+        // Default sorting: reset to original order
+        sortedProducts = category ? mockProducts.filter(product =>
+          product.categories.map(c => c.toLowerCase()).includes(category.toLowerCase())
+        ) : mockProducts;
+        break;
+    }
+    return sortedProducts;
+  }, [sortOrder, category]);
+
+  // Size filtering
+  const handleSizeChange = (size: string) => {
+    setSelectedSizes(prevSizes =>
+      prevSizes.includes(size) ? prevSizes.filter(s => s !== size) : [...prevSizes, size]
+    );
+  };
+
+  // Color filtering
+  const handleColorChange = (color: string) => {
+    setSelectedColors(prevColors =>
+      prevColors.includes(color) ? prevColors.filter(c => c !== color) : [...prevColors, color]
+    );
+  };
+
+  // Price filtering
+  const handlePriceChange = (value: number[]) => {
+    setPriceFilterRange(value);
   };
 
   useEffect(() => {
-    fetchProducts();
-  }, [category, priceRange, sortBy]);
+    // Apply filters
+    let newFilteredProducts = [...products];
+
+    // Filter by size
+    if (selectedSizes.length > 0) {
+      newFilteredProducts = newFilteredProducts.filter(product =>
+        product.size.some(size => selectedSizes.includes(size))
+      );
+    }
+
+    // Filter by color
+    if (selectedColors.length > 0) {
+      newFilteredProducts = newFilteredProducts.filter(product =>
+        selectedColors.includes(product.color)
+      );
+    }
+
+    // Filter by price
+    newFilteredProducts = newFilteredProducts.filter(product =>
+      product.price >= priceFilterRange[0] && product.price <= priceFilterRange[1]
+    );
+
+    // Sort products
+    newFilteredProducts = sortProducts(newFilteredProducts);
+
+    setFilteredProducts(newFilteredProducts);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [selectedSizes, selectedColors, priceFilterRange, products, sortProducts]);
+
+  const pageCount = Math.ceil(filteredProducts.length / productsPerPage);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * productsPerPage,
+    currentPage * productsPerPage
+  );
 
   return (
     <MainLayout>
-      <div className="container py-8 md:py-12">
-        {/* Breadcrumb and title */}
-        <div className="mb-8">
-          <div className="flex items-center text-sm text-muted-foreground mb-4">
-            <a href="/" className="hover:text-usha-burgundy">Home</a>
-            <span className="mx-2">/</span>
-            <a href="/category" className="hover:text-usha-burgundy">Categories</a>
-            {category && (
-              <>
-                <span className="mx-2">/</span>
-                <span className="text-foreground font-medium">{categoryName}</span>
-              </>
-            )}
-          </div>
-          
-          <h1 className="text-3xl md:text-4xl font-serif font-medium text-gray-800">
-            {categoryName ? categoryName.charAt(0).toUpperCase() + categoryName.slice(1) : 'All Categories'}
-          </h1>
-        </div>
-
-        {/* Mobile filter toggle */}
-        <div className="md:hidden mb-4">
-          <Button 
-            variant="outline" 
-            onClick={() => setFilterOpen(!filterOpen)}
-            className="w-full flex items-center justify-center"
-          >
-            <Filter className="mr-2 h-4 w-4" />
-            {filterOpen ? 'Hide Filters' : 'Show Filters'}
-          </Button>
-        </div>
-
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Filters sidebar */}
-          <aside className={`w-full md:w-64 ${filterOpen ? 'block' : 'hidden'} md:block`}>
-            <div className="bg-background p-4 rounded-lg border">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-medium text-lg">Filters</h2>
-                <Button variant="ghost" size="sm" onClick={() => {
-                  setPriceRange([0, 50000]);
-                }}>
-                  Reset
-                </Button>
-              </div>
-            
-              <div className="mb-6">
-                <h3 className="font-medium mb-3">Price Range</h3>
-                <Slider
-                  value={priceRange}
-                  min={0}
-                  max={50000}
-                  step={500}
-                  onValueChange={(value: number[]) => setPriceRange(value)}
-                  className="mb-6"
-                />
-                <div className="flex items-center justify-between">
-                  <span>₹{priceRange[0].toLocaleString()}</span>
-                  <span>₹{priceRange[1].toLocaleString()}</span>
-                </div>
-              </div>
-
-              <Separator className="my-4" />
-
-              <div>
-                <h3 className="font-medium mb-3">Sort By</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="sort-price-asc" 
-                      checked={sortBy === 'price-asc'}
-                      onCheckedChange={() => setSortBy('price-asc')}
-                    />
-                    <label htmlFor="sort-price-asc">Price: Low to High</label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="sort-price-desc" 
-                      checked={sortBy === 'price-desc'}
-                      onCheckedChange={() => setSortBy('price-desc')}
-                    />
-                    <label htmlFor="sort-price-desc">Price: High to Low</label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="sort-newest" 
-                      checked={sortBy === 'newest'}
-                      onCheckedChange={() => setSortBy('newest')}
-                    />
-                    <label htmlFor="sort-newest">Newest First</label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="sort-rating" 
-                      checked={sortBy === 'rating'}
-                      onCheckedChange={() => setSortBy('rating')}
-                    />
-                    <label htmlFor="sort-rating">Customer Rating</label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </aside>
-
-          {/* Products grid */}
-          <div className="flex-1">
-            {loading ? (
-              <div className="flex items-center justify-center h-96">
-                <Loader2 className="h-8 w-8 animate-spin text-usha-burgundy" />
-                <span className="ml-2">Loading products...</span>
-              </div>
-            ) : products.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    id={product.id}
-                    name={product.name}
-                    price={product.price}
-                    discount={product.discount}
-                    image={product.image || "/placeholder.svg"}
-                    rating={product.rating}
-                    category={product.category}
+      <div className="container mx-auto py-8 flex flex-col md:flex-row gap-8">
+        {/* Filter Section */}
+        <aside className="w-full md:w-80 p-4 border rounded">
+          <ScrollArea className="h-[500px] w-full">
+            <Card>
+              <CardHeader>
+                <CardTitle>Filter by Price</CardTitle>
+                <CardDescription>Set the price range for products</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type="number"
+                    value={priceFilterRange[0]}
+                    onChange={(e) => handlePriceChange([Number(e.target.value), priceFilterRange[1]])}
+                    className="w-24"
                   />
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-96 text-center">
-                <h3 className="text-xl font-medium mb-2">No products found</h3>
-                <p className="text-muted-foreground mb-4">
-                  Try adjusting your filters or check back later for new arrivals.
-                </p>
-                <Button 
-                  onClick={() => {
-                    setPriceRange([0, 50000]);
-                    setSortBy('price-asc');
-                  }}
-                  variant="outline"
+                  <span>-</span>
+                  <Input
+                    type="number"
+                    value={priceFilterRange[1]}
+                    onChange={(e) => handlePriceChange([priceFilterRange[0], Number(e.target.value)])}
+                    className="w-24"
+                  />
+                </div>
+                <Slider
+                  defaultValue={priceFilterRange}
+                  min={minPrice}
+                  max={maxPrice}
+                  step={100}
+                  onValueChange={handlePriceChange}
                 >
-                  Reset Filters
+                  <SliderTrack className='bg-muted'>
+                    <SliderRange className='bg-primary' />
+                  </SliderTrack>
+                  <SliderThumb className='ring-2 ring-primary' />
+                  <SliderThumb className='ring-2 ring-primary' />
+                </Slider>
+              </CardContent>
+            </Card>
+
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle>Filter by Size</CardTitle>
+                <CardDescription>Select the sizes you want to filter by</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col space-y-1">
+                  {availableSizes.map(size => (
+                    <div key={size} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`size-${size}`}
+                        checked={selectedSizes.includes(size)}
+                        onCheckedChange={() => handleSizeChange(size)}
+                      />
+                      <label
+                        htmlFor={`size-${size}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {size}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle>Filter by Color</CardTitle>
+                <CardDescription>Select the colors you want to filter by</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col space-y-1">
+                  {availableColors.map(color => (
+                    <div key={color} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`color-${color}`}
+                        checked={selectedColors.includes(color)}
+                        onCheckedChange={() => handleColorChange(color)}
+                      />
+                      <label
+                        htmlFor={`color-${color}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {color}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </ScrollArea>
+        </aside>
+
+        {/* Product Listing Section */}
+        <section className="flex-1">
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-2xl font-bold">{category ? category : 'All Products'}</h1>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="ml-auto">
+                  Sort by Price
+                  <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
-              </div>
-            )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setSortOrder('default')}>
+                  <ChevronsUpDown className="mr-2 h-4 w-4" />
+                  Default
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortOrder('asc')}>
+                  <ChevronDown className="mr-2 h-4 w-4" />
+                  Price: Low to High
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortOrder('desc')}>
+                  <ChevronDown className="mr-2 h-4 w-4 rotate-180" />
+                  Price: High to Low
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        </div>
+
+          {/* Product Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {paginatedProducts.map(product => (
+              <Link to={`/product/${product.id}`} key={product.id} className="group">
+                <Card className="h-full flex flex-col">
+                  <CardHeader className="p-0">
+                    <AspectRatio ratio={4 / 3}>
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="object-cover rounded-md aspect-video"
+                      />
+                    </AspectRatio>
+                  </CardHeader>
+                  <CardContent className="flex flex-col p-4 space-y-2 flex-grow">
+                    <CardTitle className="text-lg font-semibold truncate group-hover:text-primary transition-colors">
+                      {product.name}
+                    </CardTitle>
+                    <CardDescription>
+                      ₹{product.price.toLocaleString('en-IN')}
+                    </CardDescription>
+                    {product.discount && (
+                      <Badge variant="secondary">
+                        {product.discount}% off
+                      </Badge>
+                    )}
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {filteredProducts.length > 0 && (
+            <div className="flex justify-center mt-8">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                    />
+                  </PaginationItem>
+                  {/* Display up to 5 page numbers */}
+                  {Array.from({ length: Math.min(5, pageCount) }, (_, i) => {
+                    const pageNumber = Math.max(1, Math.min(currentPage - 2 + i, pageCount));
+                    return (
+                      <PaginationItem key={pageNumber} hidden={pageNumber > pageCount}>
+                        <PaginationLink
+                          href="#"
+                          onClick={() => setCurrentPage(pageNumber)}
+                          isCurrent={currentPage === pageNumber}
+                          disabled={currentPage === pageNumber}
+                        >
+                          {pageNumber}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, pageCount))}
+                      disabled={currentPage === pageCount}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
+        </section>
       </div>
     </MainLayout>
   );
-}
+};
+
+export default CategoryPage;

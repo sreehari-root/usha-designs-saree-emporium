@@ -1,22 +1,29 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, ShoppingBag, Users, Tag, BarChart2, Settings, LogOut, User, Package, FileText, Star } from 'lucide-react';
+import { Eye, ShoppingBag, Users, User, BarChart2, Settings, LogOut, Package, FileText, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mockProducts } from '@/lib/constants';
+import { useAuth } from '@/contexts/AuthContext';
+import AdminMenu from '@/components/AdminMenu';
 
 export default function AdminDashboard() {
+  const { user, signOut } = useAuth();
+  
   // Mock stats for the dashboard
   const stats = {
     totalOrders: 156,
-    totalRevenue: 18_75_000,
+    totalRevenue: 1875000,
     totalCustomers: 324,
     totalProducts: mockProducts.length,
     pendingOrders: 12,
     lowStockProducts: 5,
     recentReviews: 18,
+  };
+
+  const handleLogout = async () => {
+    await signOut();
   };
 
   return (
@@ -27,36 +34,9 @@ export default function AdminDashboard() {
           <h2 className="text-lg font-semibold">Admin Panel</h2>
           <p className="text-sm text-muted-foreground">Usha Designs</p>
         </div>
-        <nav className="flex-1 p-4 space-y-1">
-          <Link to="/admin/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-md bg-muted/50 text-foreground font-medium">
-            <BarChart2 size={16} />
-            Dashboard
-          </Link>
-          <Link to="/admin/products" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
-            <Package size={16} />
-            Products
-          </Link>
-          <Link to="/admin/orders" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
-            <ShoppingBag size={16} />
-            Orders
-          </Link>
-          <Link to="/admin/customers" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
-            <Users size={16} />
-            Customers
-          </Link>
-          <Link to="/admin/reviews" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
-            <Star size={16} />
-            Reviews
-          </Link>
-          <Link to="/admin/categories" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
-            <Tag size={16} />
-            Categories
-          </Link>
-          <Link to="/admin/reports" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
-            <FileText size={16} />
-            Reports
-          </Link>
-        </nav>
+        <div className="flex-1 p-4 space-y-1">
+          <AdminMenu />
+        </div>
         <div className="p-4 border-t mt-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -64,14 +44,12 @@ export default function AdminDashboard() {
                 <User size={14} />
               </div>
               <div>
-                <p className="text-sm font-medium">Admin</p>
-                <p className="text-xs text-muted-foreground">admin@admin.com</p>
+                <p className="text-sm font-medium">{user?.user_metadata?.first_name || 'Admin'}</p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" asChild>
-              <Link to="/logout">
-                <LogOut size={16} />
-              </Link>
+            <Button variant="ghost" size="icon" onClick={handleLogout}>
+              <LogOut size={16} />
             </Button>
           </div>
         </div>
@@ -125,7 +103,7 @@ export default function AdminDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold">₹{(stats.totalRevenue).toLocaleString('en-IN')}</div>
+                    <div className="text-2xl font-bold">₹{stats.totalRevenue.toLocaleString('en-IN')}</div>
                     <div className="h-12 w-12 rounded-full bg-green-100 text-green-600 grid place-items-center">
                       <BarChart2 />
                     </div>
