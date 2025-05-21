@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,17 +28,19 @@ type Product = {
   featured: boolean;
 };
 
+type ReviewProfile = {
+  first_name: string | null;
+  last_name: string | null;
+};
+
 type Review = {
   id: string;
   user_id: string;
   product_id: string;
   rating: number;
-  comment: string;
+  comment: string | null;
   created_at: string;
-  profiles?: {
-    first_name: string | null;
-    last_name: string | null;
-  } | null;
+  profiles?: ReviewProfile | null;
 };
 
 export default function ProductDetail() {
@@ -100,11 +103,23 @@ export default function ProductDetail() {
       if (error) {
         console.error('Error fetching reviews:', error);
       } else {
-        const reviewsWithProfiles = data?.map(review => ({
-          ...review,
-          profiles: review.profiles || { first_name: null, last_name: null }
-        })) || [];
-        setReviews(reviewsWithProfiles);
+        // Safely create reviews with consistent profile structure
+        const processedReviews: Review[] = (data || []).map(review => ({
+          id: review.id,
+          user_id: review.user_id,
+          product_id: review.product_id,
+          rating: review.rating,
+          comment: review.comment,
+          created_at: review.created_at,
+          profiles: review.profiles && typeof review.profiles === 'object' 
+            ? { 
+                first_name: review.profiles.first_name || null, 
+                last_name: review.profiles.last_name || null 
+              } 
+            : { first_name: null, last_name: null }
+        }));
+        
+        setReviews(processedReviews);
       }
     } catch (error) {
       console.error('Error processing reviews:', error);

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -28,7 +27,7 @@ export default function CategoryPage() {
   const { category } = useParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [priceRange, setPriceRange] = useState([0, 50000]);
+  const [priceRange, setPriceRange] = useState<number[]>([0, 50000]);
   const [sortBy, setSortBy] = useState('price-asc');
   const [filterOpen, setFilterOpen] = useState(false);
   const categoryName = category ? category.replace(/-/g, ' ') : '';
@@ -133,7 +132,7 @@ export default function CategoryPage() {
                   min={0}
                   max={50000}
                   step={500}
-                  onValueChange={setPriceRange}
+                  onValueChange={(value: number[]) => setPriceRange(value)}
                   className="mb-6"
                 />
                 <div className="flex items-center justify-between">
