@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -35,9 +34,9 @@ type Review = {
   rating: number;
   comment: string;
   created_at: string;
-  profiles: {
-    first_name: string;
-    last_name: string;
+  profiles?: {
+    first_name: string | null;
+    last_name: string | null;
   } | null;
 };
 
@@ -88,25 +87,30 @@ export default function ProductDetail() {
     if (!id) return;
 
     setReviewLoading(true);
-    const { data, error } = await supabase
-      .from('reviews')
-      .select(`
-        *,
-        profiles:user_id (
-          first_name,
-          last_name
-        )
-      `)
-      .eq('product_id', id)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select(`
+          id, user_id, product_id, rating, comment, created_at,
+          profiles:user_id(first_name, last_name)
+        `)
+        .eq('product_id', id)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching reviews:', error);
-    } else {
-      setReviews(data || []);
+      if (error) {
+        console.error('Error fetching reviews:', error);
+      } else {
+        const reviewsWithProfiles = data?.map(review => ({
+          ...review,
+          profiles: review.profiles || { first_name: null, last_name: null }
+        })) || [];
+        setReviews(reviewsWithProfiles);
+      }
+    } catch (error) {
+      console.error('Error processing reviews:', error);
+    } finally {
+      setReviewLoading(false);
     }
-    
-    setReviewLoading(false);
   };
 
   useEffect(() => {

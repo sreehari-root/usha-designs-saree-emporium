@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Indian } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 
 export default function Auth() {
@@ -78,7 +77,7 @@ export default function Auth() {
       <div className="container flex items-center justify-center py-16">
         <div className="w-full max-w-md">
           <div className="mb-8 text-center">
-            <div className="indian-border mb-4"></div>
+            <div className="mb-4 border-b-2 border-usha-burgundy w-16 mx-auto"></div>
             <h1 className="text-3xl font-serif font-medium text-gray-800">Welcome to Usha Designs</h1>
             <p className="text-gray-600 mt-2">Sign in to access your account or create a new one</p>
           </div>
