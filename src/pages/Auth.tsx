@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,8 +13,6 @@ export default function Auth() {
   const { signIn, signUp, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const tabParam = searchParams.get('tab');
   
   // Form states
   const [loginEmail, setLoginEmail] = useState('');
@@ -26,12 +24,6 @@ export default function Auth() {
   const [lastName, setLastName] = useState('');
   const [loginError, setLoginError] = useState('');
   const [signupError, setSignupError] = useState('');
-  const [activeTab, setActiveTab] = useState<string>(tabParam === 'signup' ? 'signup' : 'login');
-  
-  useEffect(() => {
-    // Update active tab when URL params change
-    setActiveTab(tabParam === 'signup' ? 'signup' : 'login');
-  }, [tabParam]);
 
   // If user is already logged in, redirect to homepage
   if (user) {
@@ -70,20 +62,14 @@ export default function Auth() {
     try {
       const { error } = await signUp(signupEmail, signupPassword, firstName, lastName);
       if (!error) {
-        // Switch to login tab after successful signup
-        setActiveTab('login');
+        // Don't navigate yet as the user needs to verify their email
+        // Instead, show a success message or stay on the login tab
       }
     } catch (error: any) {
       setSignupError(error.message || 'An error occurred during signup');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    // Update URL to reflect tab change
-    navigate(`/auth${value === 'signup' ? '?tab=signup' : ''}`);
   };
 
   return (
@@ -96,7 +82,7 @@ export default function Auth() {
             <p className="text-gray-600 mt-2">Sign in to access your account or create a new one</p>
           </div>
           
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
