@@ -1,10 +1,8 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
-  Slider,
-  SliderTrack,
-  SliderThumb,
-  SliderRange,
+  Slider
 } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -30,34 +28,53 @@ const CategoryPage = () => {
   const [products, setProducts] = useState(mockProducts);
   const [filteredProducts, setFilteredProducts] = useState(mockProducts);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'default'>('default');
-  const [availableSizes, setAvailableSizes] = useState(Array.from(new Set(mockProducts.map(product => product.size).flat())));
+  
+  // Fix: Modify to access product.sizes instead of product.size
+  const [availableSizes, setAvailableSizes] = useState<string[]>(() => {
+    const allSizes = mockProducts.flatMap(product => product.sizes || []);
+    return Array.from(new Set(allSizes));
+  });
+  
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<number>(0);
+  const [priceRange, setPriceRange] = useState<number[]>([0, 0]); // Fix: Changed to number array
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 12;
 
-  const [availableColors] = useState(Array.from(new Set(mockProducts.map(product => product.color))));
+  // Fix: Access product.colors[0] instead of product.color
+  const [availableColors] = useState<string[]>(() => {
+    const allColors = mockProducts.flatMap(product => product.colors || []);
+    return Array.from(new Set(allColors));
+  });
+  
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
 
   const [minPrice, setMinPrice] = useState(Math.min(...mockProducts.map(product => product.price)));
   const [maxPrice, setMaxPrice] = useState(Math.max(...mockProducts.map(product => product.price)));
-  const [priceFilterRange, setPriceFilterRange] = useState([minPrice, maxPrice]);
+  const [priceFilterRange, setPriceFilterRange] = useState<number[]>([minPrice, maxPrice]);
 
   useEffect(() => {
     if (category) {
       const categoryProducts = mockProducts.filter(product =>
-        product.categories.map(c => c.toLowerCase()).includes(category.toLowerCase())
+        product.category.toLowerCase() === category.toLowerCase()
       );
       setProducts(categoryProducts);
       setFilteredProducts(categoryProducts);
-      setAvailableSizes(Array.from(new Set(categoryProducts.map(product => product.size).flat())));
+      
+      // Fix: Access product.sizes instead of product.size
+      const sizes = categoryProducts.flatMap(product => product.sizes || []);
+      setAvailableSizes(Array.from(new Set(sizes)));
+      
       setMinPrice(Math.min(...categoryProducts.map(product => product.price)));
       setMaxPrice(Math.max(...categoryProducts.map(product => product.price)));
       setPriceFilterRange([Math.min(...categoryProducts.map(product => product.price)), Math.max(...categoryProducts.map(product => product.price))]);
     } else {
       setProducts(mockProducts);
       setFilteredProducts(mockProducts);
-      setAvailableSizes(Array.from(new Set(mockProducts.map(product => product.size).flat())));
+      
+      // Fix: Access product.sizes instead of product.size
+      const sizes = mockProducts.flatMap(product => product.sizes || []);
+      setAvailableSizes(Array.from(new Set(sizes)));
+      
       setMinPrice(Math.min(...mockProducts.map(product => product.price)));
       setMaxPrice(Math.max(...mockProducts.map(product => product.price)));
       setPriceFilterRange([Math.min(...mockProducts.map(product => product.price)), Math.max(...mockProducts.map(product => product.price))]);
@@ -78,7 +95,7 @@ const CategoryPage = () => {
       default:
         // Default sorting: reset to original order
         sortedProducts = category ? mockProducts.filter(product =>
-          product.categories.map(c => c.toLowerCase()).includes(category.toLowerCase())
+          product.category.toLowerCase() === category.toLowerCase()
         ) : mockProducts;
         break;
     }
@@ -111,14 +128,14 @@ const CategoryPage = () => {
     // Filter by size
     if (selectedSizes.length > 0) {
       newFilteredProducts = newFilteredProducts.filter(product =>
-        product.size.some(size => selectedSizes.includes(size))
+        product.sizes?.some(size => selectedSizes.includes(size)) || false
       );
     }
 
     // Filter by color
     if (selectedColors.length > 0) {
       newFilteredProducts = newFilteredProducts.filter(product =>
-        selectedColors.includes(product.color)
+        product.colors?.some(color => selectedColors.includes(color)) || false
       );
     }
 
@@ -168,18 +185,13 @@ const CategoryPage = () => {
                   />
                 </div>
                 <Slider
-                  defaultValue={priceFilterRange}
+                  value={priceFilterRange}
                   min={minPrice}
                   max={maxPrice}
                   step={100}
                   onValueChange={handlePriceChange}
-                >
-                  <SliderTrack className='bg-muted'>
-                    <SliderRange className='bg-primary' />
-                  </SliderTrack>
-                  <SliderThumb className='ring-2 ring-primary' />
-                  <SliderThumb className='ring-2 ring-primary' />
-                </Slider>
+                  className="mt-4"
+                />
               </CardContent>
             </Card>
 
@@ -297,16 +309,15 @@ const CategoryPage = () => {
             ))}
           </div>
 
-          {/* Pagination */}
+          {/* Pagination - Fix props to match expected types */}
           {filteredProducts.length > 0 && (
             <div className="flex justify-center mt-8">
               <Pagination>
                 <PaginationContent>
                   <PaginationItem>
                     <PaginationPrevious
-                      href="#"
                       onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
+                      aria-disabled={currentPage === 1}
                     />
                   </PaginationItem>
                   {/* Display up to 5 page numbers */}
@@ -315,10 +326,8 @@ const CategoryPage = () => {
                     return (
                       <PaginationItem key={pageNumber} hidden={pageNumber > pageCount}>
                         <PaginationLink
-                          href="#"
                           onClick={() => setCurrentPage(pageNumber)}
-                          isCurrent={currentPage === pageNumber}
-                          disabled={currentPage === pageNumber}
+                          isActive={currentPage === pageNumber}
                         >
                           {pageNumber}
                         </PaginationLink>
@@ -327,9 +336,8 @@ const CategoryPage = () => {
                   })}
                   <PaginationItem>
                     <PaginationNext
-                      href="#"
                       onClick={() => setCurrentPage(prev => Math.min(prev + 1, pageCount))}
-                      disabled={currentPage === pageCount}
+                      aria-disabled={currentPage === pageCount}
                     />
                   </PaginationItem>
                 </PaginationContent>
