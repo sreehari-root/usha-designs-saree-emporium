@@ -1,36 +1,17 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { Package, PlusCircle, Search, Edit, Trash2, ChevronDown, Eye, Upload, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { PlusCircle, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import AdminLayout from '@/components/layout/AdminLayout';
+import ProductForm from '@/components/products/ProductForm';
+import ProductsTable from '@/components/products/ProductsTable';
 import { ProductType, fetchProducts, addProduct, updateProduct, deleteProduct } from '@/lib/api/products';
 import { CategoryType, fetchCategories } from '@/lib/api/categories';
-import { formatCurrency } from '@/lib/utils';
 
 const ProductsPage = () => {
   const { toast } = useToast();
@@ -43,8 +24,6 @@ const ProductsPage = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(null);
   const productsPerPage = 10;
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const editFileInputRef = useRef<HTMLInputElement>(null);
   
   // New product form state
   const [newProduct, setNewProduct] = useState({
@@ -185,9 +164,6 @@ const ProductsPage = () => {
     });
     setImageFile(null);
     setImagePreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -211,16 +187,31 @@ const ProductsPage = () => {
   };
 
   const handleSwitchChange = (name: string, checked: boolean) => {
-    if (isEditDialogOpen && selectedProduct) {
-      setSelectedProduct({
-        ...selectedProduct,
-        [name]: checked
-      });
+    if (name === 'stock') {
+      const stockValue = checked ? 1 : 0;
+      if (isEditDialogOpen && selectedProduct) {
+        setSelectedProduct({
+          ...selectedProduct,
+          stock: stockValue
+        });
+      } else {
+        setNewProduct({
+          ...newProduct,
+          stock: stockValue
+        });
+      }
     } else {
-      setNewProduct({
-        ...newProduct,
-        [name]: checked
-      });
+      if (isEditDialogOpen && selectedProduct) {
+        setSelectedProduct({
+          ...selectedProduct,
+          [name]: checked
+        });
+      } else {
+        setNewProduct({
+          ...newProduct,
+          [name]: checked
+        });
+      }
     }
   };
 
@@ -238,11 +229,10 @@ const ProductsPage = () => {
     }
   };
   
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Check if file is an image
     if (!file.type.startsWith('image/')) {
       toast({
         title: 'Invalid file',
@@ -252,7 +242,6 @@ const ProductsPage = () => {
       return;
     }
     
-    // Check file size (limit to 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast({
         title: 'File too large',
@@ -262,10 +251,9 @@ const ProductsPage = () => {
       return;
     }
     
-    // Create a preview
     const reader = new FileReader();
     reader.onloadend = () => {
-      if (isEdit) {
+      if (isEditDialogOpen) {
         setEditImageFile(file);
         setEditImagePreview(reader.result as string);
       } else {
@@ -295,174 +283,19 @@ const ProductsPage = () => {
               <DialogHeader>
                 <DialogTitle>Add New Product</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleAddProduct} className="space-y-4 py-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Product Name</Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      value={newProduct.name}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Category</Label>
-                    <Select 
-                      onValueChange={handleCategoryChange}
-                      value={newProduct.category_id}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map(category => (
-                          <SelectItem key={category.id} value={category.id}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Price (₹)</Label>
-                    <Input
-                      id="price"
-                      name="price"
-                      type="number"
-                      min="0"
-                      value={newProduct.price}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="discount">Discount (%)</Label>
-                    <Input
-                      id="discount"
-                      name="discount"
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={newProduct.discount}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="stock">Stock Quantity</Label>
-                  <Input
-                    id="stock"
-                    name="stock"
-                    type="number"
-                    min="0"
-                    value={newProduct.stock}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Product Image</Label>
-                  <div className="flex items-center space-x-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload Image
-                    </Button>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      className="hidden"
-                      accept="image/*"
-                      onChange={(e) => handleImageChange(e)}
-                    />
-                    {imagePreview && (
-                      <div className="relative h-16 w-16 rounded-md overflow-hidden">
-                        <img
-                          src={imagePreview}
-                          alt="Preview"
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    name="description"
-                    value={newProduct.description || ''}
-                    onChange={handleInputChange}
-                    rows={4}
-                    required
-                  />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="inStock"
-                      checked={newProduct.stock > 0}
-                      onCheckedChange={(checked) => {
-                        setNewProduct({
-                          ...newProduct,
-                          stock: checked ? 1 : 0
-                        });
-                      }}
-                    />
-                    <Label htmlFor="inStock">In Stock</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="featured"
-                      checked={newProduct.featured}
-                      onCheckedChange={(checked) => handleSwitchChange('featured', checked)}
-                    />
-                    <Label htmlFor="featured">Featured</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="bestseller"
-                      checked={newProduct.bestseller}
-                      onCheckedChange={(checked) => handleSwitchChange('bestseller', checked)}
-                    />
-                    <Label htmlFor="bestseller">Bestseller</Label>
-                  </div>
-                </div>
-                
-                <div className="flex justify-end space-x-2 pt-4">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setIsAddDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Adding...
-                      </>
-                    ) : "Add Product"}
-                  </Button>
-                </div>
-              </form>
+              <ProductForm
+                product={newProduct}
+                categories={categories}
+                imageFile={imageFile}
+                imagePreview={imagePreview}
+                isLoading={isLoading}
+                onSubmit={handleAddProduct}
+                onInputChange={handleInputChange}
+                onCategoryChange={handleCategoryChange}
+                onSwitchChange={handleSwitchChange}
+                onImageChange={handleImageChange}
+                onCancel={() => setIsAddDialogOpen(false)}
+              />
             </DialogContent>
           </Dialog>
         </div>
@@ -485,112 +318,13 @@ const ProductsPage = () => {
               </div>
             </div>
             
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[100px]">Image</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8">
-                        <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                        <p className="mt-2 text-sm text-muted-foreground">Loading products...</p>
-                      </TableCell>
-                    </TableRow>
-                  ) : currentProducts.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8">
-                        <Package className="h-10 w-10 mx-auto text-muted-foreground opacity-50" />
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          {filteredProducts.length === 0 && products.length > 0 ? 'No products found matching your search' : 'No products yet'}
-                        </p>
-                        {filteredProducts.length === 0 && products.length === 0 && (
-                          <Button
-                            variant="outline"
-                            className="mt-4"
-                            onClick={() => setIsAddDialogOpen(true)}
-                          >
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Add Your First Product
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    currentProducts.map((product) => (
-                      <TableRow key={product.id}>
-                        <TableCell>
-                          <div className="h-10 w-10 rounded-md overflow-hidden bg-muted">
-                            {product.image ? (
-                              <img 
-                                src={product.image} 
-                                alt={product.name} 
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="h-full w-full flex items-center justify-center text-muted-foreground">
-                                <Package size={16} />
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-medium">{product.name}</TableCell>
-                        <TableCell>{product.category_name || 'Uncategorized'}</TableCell>
-                        <TableCell>{formatCurrency(product.price)}</TableCell>
-                        <TableCell>
-                          {product.stock && product.stock > 0 ? (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50">
-                              In Stock ({product.stock})
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-red-50 text-red-700 hover:bg-red-50">
-                              Out of Stock
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <ChevronDown className="h-4 w-4" />
-                                <span className="sr-only">Actions</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem asChild>
-                                <Link to={`/product/${product.id}`}>
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  View
-                                </Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEdit(product)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                className="text-red-600"
-                                onClick={() => handleDelete(product.id)}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            <ProductsTable
+              products={currentProducts}
+              isLoading={isLoading}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onAddProduct={() => setIsAddDialogOpen(true)}
+            />
             
             {filteredProducts.length > productsPerPage && (
               <div className="flex justify-center mt-4">
@@ -636,174 +370,20 @@ const ProductsPage = () => {
             <DialogHeader>
               <DialogTitle>Edit Product</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleUpdateProduct} className="space-y-4 py-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-name">Product Name</Label>
-                  <Input
-                    id="edit-name"
-                    name="name"
-                    value={selectedProduct.name}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="edit-category">Category</Label>
-                  <Select 
-                    onValueChange={handleCategoryChange}
-                    value={selectedProduct.category_id || ''}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map(category => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-price">Price (₹)</Label>
-                  <Input
-                    id="edit-price"
-                    name="price"
-                    type="number"
-                    min="0"
-                    value={selectedProduct.price}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="edit-discount">Discount (%)</Label>
-                  <Input
-                    id="edit-discount"
-                    name="discount"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={selectedProduct.discount || 0}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="edit-stock">Stock Quantity</Label>
-                <Input
-                  id="edit-stock"
-                  name="stock"
-                  type="number"
-                  min="0"
-                  value={selectedProduct.stock || 0}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Product Image</Label>
-                <div className="flex items-center space-x-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => editFileInputRef.current?.click()}
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Change Image
-                  </Button>
-                  <input
-                    type="file"
-                    ref={editFileInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    onChange={(e) => handleImageChange(e, true)}
-                  />
-                  {editImagePreview && (
-                    <div className="relative h-16 w-16 rounded-md overflow-hidden">
-                      <img
-                        src={editImagePreview}
-                        alt="Preview"
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="edit-description">Description</Label>
-                <Textarea
-                  id="edit-description"
-                  name="description"
-                  value={selectedProduct.description || ''}
-                  onChange={handleInputChange}
-                  rows={4}
-                  required
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="edit-inStock"
-                    checked={(selectedProduct.stock || 0) > 0}
-                    onCheckedChange={(checked) => {
-                      setSelectedProduct({
-                        ...selectedProduct,
-                        stock: checked ? 1 : 0
-                      });
-                    }}
-                  />
-                  <Label htmlFor="edit-inStock">In Stock</Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="edit-featured"
-                    checked={selectedProduct.featured || false}
-                    onCheckedChange={(checked) => handleSwitchChange('featured', checked)}
-                  />
-                  <Label htmlFor="edit-featured">Featured</Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="edit-bestseller"
-                    checked={selectedProduct.bestseller || false}
-                    onCheckedChange={(checked) => handleSwitchChange('bestseller', checked)}
-                  />
-                  <Label htmlFor="edit-bestseller">Bestseller</Label>
-                </div>
-              </div>
-              
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setIsEditDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : "Save Changes"}
-                </Button>
-              </div>
-            </form>
+            <ProductForm
+              product={selectedProduct}
+              categories={categories}
+              imageFile={editImageFile}
+              imagePreview={editImagePreview}
+              isLoading={isLoading}
+              isEdit={true}
+              onSubmit={handleUpdateProduct}
+              onInputChange={handleInputChange}
+              onCategoryChange={handleCategoryChange}
+              onSwitchChange={handleSwitchChange}
+              onImageChange={handleImageChange}
+              onCancel={() => setIsEditDialogOpen(false)}
+            />
           </DialogContent>
         </Dialog>
       )}
