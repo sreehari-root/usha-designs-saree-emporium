@@ -19,12 +19,16 @@ type Product = {
   description: string;
   price: number;
   discount: number;
-  category: string;
+  category?: string; // Make this optional
+  category_id?: string; // Add category_id as an optional field
   image: string | null;
   stock: number;
   rating: number;
   bestseller: boolean;
   featured: boolean;
+  created_at?: string; // Add this as optional
+  updated_at?: string; // Add this as optional
+  sales_count?: number; // Add this as optional
 };
 
 type ReviewProfile = {
@@ -60,29 +64,67 @@ export default function ProductDetail() {
   const [submitting, setSubmitting] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
   const [addingToWishlist, setAddingToWishlist] = useState(false);
+  const [categoryName, setCategoryName] = useState<string>('');
 
   const fetchProduct = async () => {
     if (!id) return;
 
     setLoading(true);
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('id', id)
-      .single();
+    try {
+      // Fetch product data
+      const { data: productData, error: productError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-    if (error) {
-      console.error('Error fetching product:', error);
+      if (productError) {
+        console.error('Error fetching product:', productError);
+        toast({
+          title: "Error",
+          description: "Failed to load product details",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+      
+      // Fetch category name if category_id exists
+      if (productData && productData.category_id) {
+        const { data: categoryData, error: categoryError } = await supabase
+          .from('categories')
+          .select('name')
+          .eq('id', productData.category_id)
+          .single();
+          
+        if (!categoryError && categoryData) {
+          setCategoryName(categoryData.name);
+          
+          // Create a complete product object with both database fields and derived fields
+          const completeProduct: Product = {
+            ...productData,
+            category: categoryData.name
+          };
+          
+          setProduct(completeProduct);
+        } else {
+          // If category fetch fails, still set the product but without category
+          setProduct(productData as Product);
+        }
+      } else {
+        // If no category_id, just set the product
+        setProduct(productData as Product);
+      }
+    } catch (error) {
+      console.error('Error in fetch operation:', error);
       toast({
         title: "Error",
-        description: "Failed to load product details",
+        description: "An unexpected error occurred",
         variant: "destructive"
       });
-    } else if (data) {
-      setProduct(data);
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   const fetchReviews = async () => {
@@ -409,8 +451,8 @@ export default function ProductDetail() {
         <div className="flex items-center text-sm text-muted-foreground mb-8">
           <a href="/" className="hover:text-usha-burgundy">Home</a>
           <span className="mx-2">/</span>
-          <a href={`/category/${product.category.toLowerCase().replace(/ /g, '-')}`} className="hover:text-usha-burgundy">
-            {product.category}
+          <a href={`/category/${categoryName.toLowerCase().replace(/ /g, '-')}`} className="hover:text-usha-burgundy">
+            {categoryName || 'Category'}
           </a>
           <span className="mx-2">/</span>
           <span className="text-foreground font-medium">{product.name}</span>
