@@ -14,6 +14,13 @@ import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./contexts/AuthContext";
+import ProductsPage from "./pages/admin/ProductsPage";
+import OrdersPage from "./pages/admin/OrdersPage";
+import CustomersPage from "./pages/admin/CustomersPage";
+import ReviewsPage from "./pages/admin/ReviewsPage";
+import CategoriesPage from "./pages/admin/CategoriesPage";
+import ReportsPage from "./pages/admin/ReportsPage";
+import SettingsPage from "./pages/admin/SettingsPage";
 
 const queryClient = new QueryClient();
 
@@ -57,11 +64,49 @@ const AppRoutes = () => {
           <Account />
         </ProtectedRoute>
       } />
+      
+      {/* Admin Routes */}
       <Route path="/admin/dashboard" element={
         <AdminRoute>
           <AdminDashboard />
         </AdminRoute>
       } />
+      <Route path="/admin/products" element={
+        <AdminRoute>
+          <ProductsPage />
+        </AdminRoute>
+      } />
+      <Route path="/admin/orders" element={
+        <AdminRoute>
+          <OrdersPage />
+        </AdminRoute>
+      } />
+      <Route path="/admin/customers" element={
+        <AdminRoute>
+          <CustomersPage />
+        </AdminRoute>
+      } />
+      <Route path="/admin/reviews" element={
+        <AdminRoute>
+          <ReviewsPage />
+        </AdminRoute>
+      } />
+      <Route path="/admin/categories" element={
+        <AdminRoute>
+          <CategoriesPage />
+        </AdminRoute>
+      } />
+      <Route path="/admin/reports" element={
+        <AdminRoute>
+          <ReportsPage />
+        </AdminRoute>
+      } />
+      <Route path="/admin/settings" element={
+        <AdminRoute>
+          <SettingsPage />
+        </AdminRoute>
+      } />
+      
       <Route path="/category/:category" element={<CategoryPage />} />
       <Route path="/product/:id" element={<ProductDetail />} />
       <Route path="/cart" element={<Cart />} />

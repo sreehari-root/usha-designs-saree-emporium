@@ -1,9 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import {
-  Slider
-} from "@/components/ui/slider"
+import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,28 +27,20 @@ const CategoryPage = () => {
   const [filteredProducts, setFilteredProducts] = useState(mockProducts);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'default'>('default');
   
-  // Fix: Modify to access product.sizes instead of product.size
-  const [availableSizes, setAvailableSizes] = useState<string[]>(() => {
-    const allSizes = mockProducts.flatMap(product => product.sizes || []);
-    return Array.from(new Set(allSizes));
-  });
-  
+  // Define available sizes manually since the mock data doesn't have sizes
+  const [availableSizes] = useState(['S', 'M', 'L', 'XL', 'XXL']);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<number[]>([0, 0]); // Fix: Changed to number array
+  const [priceRange, setPriceRange] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 12;
 
-  // Fix: Access product.colors[0] instead of product.color
-  const [availableColors] = useState<string[]>(() => {
-    const allColors = mockProducts.flatMap(product => product.colors || []);
-    return Array.from(new Set(allColors));
-  });
-  
+  // Define colors from the products' colors arrays
+  const [availableColors] = useState(Array.from(new Set(mockProducts.flatMap(product => product.colors))));
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
 
   const [minPrice, setMinPrice] = useState(Math.min(...mockProducts.map(product => product.price)));
   const [maxPrice, setMaxPrice] = useState(Math.max(...mockProducts.map(product => product.price)));
-  const [priceFilterRange, setPriceFilterRange] = useState<number[]>([minPrice, maxPrice]);
+  const [priceFilterRange, setPriceFilterRange] = useState([minPrice, maxPrice]);
 
   useEffect(() => {
     if (category) {
@@ -59,22 +49,12 @@ const CategoryPage = () => {
       );
       setProducts(categoryProducts);
       setFilteredProducts(categoryProducts);
-      
-      // Fix: Access product.sizes instead of product.size
-      const sizes = categoryProducts.flatMap(product => product.sizes || []);
-      setAvailableSizes(Array.from(new Set(sizes)));
-      
       setMinPrice(Math.min(...categoryProducts.map(product => product.price)));
       setMaxPrice(Math.max(...categoryProducts.map(product => product.price)));
       setPriceFilterRange([Math.min(...categoryProducts.map(product => product.price)), Math.max(...categoryProducts.map(product => product.price))]);
     } else {
       setProducts(mockProducts);
       setFilteredProducts(mockProducts);
-      
-      // Fix: Access product.sizes instead of product.size
-      const sizes = mockProducts.flatMap(product => product.sizes || []);
-      setAvailableSizes(Array.from(new Set(sizes)));
-      
       setMinPrice(Math.min(...mockProducts.map(product => product.price)));
       setMaxPrice(Math.max(...mockProducts.map(product => product.price)));
       setPriceFilterRange([Math.min(...mockProducts.map(product => product.price)), Math.max(...mockProducts.map(product => product.price))]);
@@ -125,17 +105,19 @@ const CategoryPage = () => {
     // Apply filters
     let newFilteredProducts = [...products];
 
-    // Filter by size
+    // Filter by size (if we had size data in the products)
     if (selectedSizes.length > 0) {
-      newFilteredProducts = newFilteredProducts.filter(product =>
-        product.sizes?.some(size => selectedSizes.includes(size)) || false
-      );
+      // Since our mock data doesn't have size information, this is a placeholder
+      // In a real app, you would filter based on actual product sizes
+      // newFilteredProducts = newFilteredProducts.filter(product =>
+      //   product.sizes.some(size => selectedSizes.includes(size))
+      // );
     }
 
     // Filter by color
     if (selectedColors.length > 0) {
       newFilteredProducts = newFilteredProducts.filter(product =>
-        product.colors?.some(color => selectedColors.includes(color)) || false
+        product.colors.some(color => selectedColors.includes(color))
       );
     }
 
@@ -190,7 +172,6 @@ const CategoryPage = () => {
                   max={maxPrice}
                   step={100}
                   onValueChange={handlePriceChange}
-                  className="mt-4"
                 />
               </CardContent>
             </Card>
@@ -309,15 +290,18 @@ const CategoryPage = () => {
             ))}
           </div>
 
-          {/* Pagination - Fix props to match expected types */}
+          {/* Pagination */}
           {filteredProducts.length > 0 && (
             <div className="flex justify-center mt-8">
               <Pagination>
                 <PaginationContent>
                   <PaginationItem>
                     <PaginationPrevious
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      aria-disabled={currentPage === 1}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentPage(prev => Math.max(prev - 1, 1));
+                      }}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
                     />
                   </PaginationItem>
                   {/* Display up to 5 page numbers */}
@@ -326,7 +310,10 @@ const CategoryPage = () => {
                     return (
                       <PaginationItem key={pageNumber} hidden={pageNumber > pageCount}>
                         <PaginationLink
-                          onClick={() => setCurrentPage(pageNumber)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentPage(pageNumber);
+                          }}
                           isActive={currentPage === pageNumber}
                         >
                           {pageNumber}
@@ -336,8 +323,11 @@ const CategoryPage = () => {
                   })}
                   <PaginationItem>
                     <PaginationNext
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, pageCount))}
-                      aria-disabled={currentPage === pageCount}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentPage(prev => Math.min(prev + 1, pageCount));
+                      }}
+                      className={currentPage === pageCount ? "pointer-events-none opacity-50" : ""}
                     />
                   </PaginationItem>
                 </PaginationContent>
