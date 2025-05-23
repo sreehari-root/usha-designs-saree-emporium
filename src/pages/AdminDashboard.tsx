@@ -1,30 +1,94 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, ShoppingBag, Users, User, BarChart2, Settings, LogOut, Package, FileText, Star, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { mockProducts } from '@/lib/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import AdminMenu from '@/components/AdminMenu';
+import {
+  getDashboardStats,
+  getRecentOrders,
+  getTopProducts,
+  getSalesOverTime
+} from '@/lib/api/analytics';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  Cell,
+  Legend
+} from 'recharts';
+import { formatCurrency } from '@/lib/utils';
 
 export default function AdminDashboard() {
   const { user, signOut } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    totalRevenue: 0,
+    totalCustomers: 0,
+    totalProducts: 0,
+    pendingOrders: 0,
+    lowStockProducts: 0,
+    recentReviews: 0,
+  });
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [salesData, setSalesData] = useState<any[]>([]);
   
-  // Mock stats for the dashboard
-  const stats = {
-    totalOrders: 156,
-    totalRevenue: 1875000,
-    totalCustomers: 324,
-    totalProducts: mockProducts.length,
-    pendingOrders: 12,
-    lowStockProducts: 5,
-    recentReviews: 18,
-  };
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      setIsLoading(true);
+      try {
+        // Load stats, orders and products data in parallel
+        const [statsData, ordersData, productsData, salesTimeData] = await Promise.all([
+          getDashboardStats(),
+          getRecentOrders(),
+          getTopProducts(),
+          getSalesOverTime()
+        ]);
+        
+        setStats(statsData);
+        setRecentOrders(ordersData);
+        setTopProducts(productsData);
+        setSalesData(salesTimeData);
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadDashboardData();
+  }, []);
 
   const handleLogout = async () => {
     await signOut();
+  };
+
+  const handleAddProduct = () => {
+    window.location.href = '/admin/products?action=add';
+  };
+
+  const handleManageCategories = () => {
+    window.location.href = '/admin/categories';
+  };
+
+  const handleProcessOrders = () => {
+    window.location.href = '/admin/orders';
+  };
+
+  const handleGenerateReport = () => {
+    // In a real app, this would generate a downloadable report
+    alert('Report generation functionality will be implemented soon!');
   };
 
   return (
@@ -85,14 +149,16 @@ export default function AdminDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold">{stats.totalOrders}</div>
+                    <div className="text-2xl font-bold">{isLoading ? '...' : stats.totalOrders}</div>
                     <div className="h-12 w-12 rounded-full bg-usha-burgundy/10 text-usha-burgundy grid place-items-center">
                       <ShoppingBag />
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    +5 new orders today
-                  </p>
+                  {stats.pendingOrders > 0 && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {stats.pendingOrders} pending orders
+                    </p>
+                  )}
                 </CardContent>
               </Card>
 
@@ -104,14 +170,19 @@ export default function AdminDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold">₹{stats.totalRevenue.toLocaleString('en-IN')}</div>
+                    <div className="text-2xl font-bold">
+                      {isLoading ? '...' : formatCurrency(stats.totalRevenue)}
+                    </div>
                     <div className="h-12 w-12 rounded-full bg-green-100 text-green-600 grid place-items-center">
                       <BarChart2 />
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    +12% from last month
-                  </p>
+                  {salesData.length > 1 && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {salesData[salesData.length - 1].revenue > salesData[salesData.length - 2].revenue ? '+' : '-'}
+                      {Math.abs(salesData[salesData.length - 1].revenue - salesData[salesData.length - 2].revenue).toLocaleString('en-IN')} from previous day
+                    </p>
+                  )}
                 </CardContent>
               </Card>
 
@@ -123,14 +194,16 @@ export default function AdminDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold">{stats.totalCustomers}</div>
+                    <div className="text-2xl font-bold">{isLoading ? '...' : stats.totalCustomers}</div>
                     <div className="h-12 w-12 rounded-full bg-blue-100 text-blue-600 grid place-items-center">
                       <Users />
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    +3 new customers today
-                  </p>
+                  {stats.recentReviews > 0 && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {stats.recentReviews} new reviews in the last 30 days
+                    </p>
+                  )}
                 </CardContent>
               </Card>
 
@@ -142,14 +215,16 @@ export default function AdminDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <div className="text-2xl font-bold">{stats.totalProducts}</div>
+                    <div className="text-2xl font-bold">{isLoading ? '...' : stats.totalProducts}</div>
                     <div className="h-12 w-12 rounded-full bg-amber-100 text-amber-600 grid place-items-center">
                       <Package />
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {stats.lowStockProducts} items low in stock
-                  </p>
+                  {stats.lowStockProducts > 0 && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {stats.lowStockProducts} items low in stock
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -176,19 +251,34 @@ export default function AdminDashboard() {
                           <div className="text-right">Amount</div>
                         </div>
                         <div className="space-y-2">
-                          {[...Array(5)].map((_, i) => (
-                            <div key={i} className="grid grid-cols-3 text-sm py-2 border-b">
-                              <div>ORD-{1000 + i}</div>
-                              <div>
-                                <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">
-                                  Completed
-                                </span>
+                          {isLoading ? (
+                            <p className="text-center py-4 text-sm text-muted-foreground">Loading orders...</p>
+                          ) : recentOrders.length === 0 ? (
+                            <p className="text-center py-4 text-sm text-muted-foreground">No orders yet</p>
+                          ) : (
+                            recentOrders.map((order) => (
+                              <div key={order.id} className="grid grid-cols-3 text-sm py-2 border-b">
+                                <div>{order.id.slice(0, 8)}</div>
+                                <div>
+                                  <span className={`px-2 py-0.5 rounded-full text-xs ${
+                                    order.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                    order.status === 'processing' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-amber-100 text-amber-700'
+                                  }`}>
+                                    {order.status}
+                                  </span>
+                                </div>
+                                <div className="text-right">{formatCurrency(order.total)}</div>
                               </div>
-                              <div className="text-right">₹{(3000 + i * 1000).toLocaleString('en-IN')}</div>
-                            </div>
-                          ))}
+                            ))
+                          )}
                         </div>
-                        <Button variant="outline" className="w-full" size="sm">
+                        <Button 
+                          variant="outline" 
+                          className="w-full" 
+                          size="sm"
+                          onClick={() => window.location.href = '/admin/orders'}
+                        >
                           View All Orders
                         </Button>
                       </div>
@@ -203,34 +293,32 @@ export default function AdminDashboard() {
                       <div className="space-y-4">
                         <div className="grid grid-cols-6 text-sm font-medium text-muted-foreground">
                           <div className="col-span-3">Product</div>
-                          <div>Rating</div>
-                          <div>Stock</div>
-                          <div className="text-right">Sales</div>
+                          <div>Sales</div>
+                          <div className="text-right col-span-2">Revenue</div>
                         </div>
                         <div className="space-y-2">
-                          {mockProducts.slice(0, 5).map((product) => (
-                            <div key={product.id} className="grid grid-cols-6 text-sm py-2 border-b">
-                              <div className="col-span-3 flex items-center gap-2">
-                                <img
-                                  src={product.image}
-                                  alt={product.name}
-                                  className="w-8 h-8 rounded object-cover"
-                                />
-                                <span className="truncate">{product.name}</span>
+                          {isLoading ? (
+                            <p className="text-center py-4 text-sm text-muted-foreground">Loading products...</p>
+                          ) : topProducts.length === 0 ? (
+                            <p className="text-center py-4 text-sm text-muted-foreground">No products data yet</p>
+                          ) : (
+                            topProducts.map((product) => (
+                              <div key={product.id} className="grid grid-cols-6 text-sm py-2 border-b">
+                                <div className="col-span-3 truncate">
+                                  {product.name}
+                                </div>
+                                <div>{product.sales_count}</div>
+                                <div className="text-right col-span-2">{formatCurrency(product.revenue)}</div>
                               </div>
-                              <div>{product.rating?.toFixed(1)}</div>
-                              <div>
-                                {product.inStock ? (
-                                  <span className="text-green-600">In Stock</span>
-                                ) : (
-                                  <span className="text-red-500">Out of Stock</span>
-                                )}
-                              </div>
-                              <div className="text-right">{product.salesCount}</div>
-                            </div>
-                          ))}
+                            ))
+                          )}
                         </div>
-                        <Button variant="outline" className="w-full" size="sm">
+                        <Button 
+                          variant="outline" 
+                          className="w-full" 
+                          size="sm"
+                          onClick={() => window.location.href = '/admin/products'}
+                        >
                           View All Products
                         </Button>
                       </div>
@@ -244,19 +332,35 @@ export default function AdminDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+                        onClick={handleAddProduct}
+                      >
                         <Package size={24} />
                         <span>Add Product</span>
                       </Button>
-                      <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+                        onClick={handleManageCategories}
+                      >
                         <Tag size={24} />
                         <span>Manage Categories</span>
                       </Button>
-                      <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+                        onClick={handleProcessOrders}
+                      >
                         <ShoppingBag size={24} />
                         <span>Process Orders</span>
                       </Button>
-                      <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+                        onClick={handleGenerateReport}
+                      >
                         <FileText size={24} />
                         <span>Generate Report</span>
                       </Button>
@@ -268,12 +372,78 @@ export default function AdminDashboard() {
               <TabsContent value="analytics" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Analytics Dashboard</CardTitle>
+                    <CardTitle>Sales Overview</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-center text-muted-foreground py-12">
-                      Analytics charts and data visualization will be displayed here.
-                    </p>
+                    {isLoading ? (
+                      <p className="text-center py-12 text-muted-foreground">Loading sales data...</p>
+                    ) : salesData.length < 2 ? (
+                      <p className="text-center py-12 text-muted-foreground">
+                        Not enough sales data available to display chart.
+                      </p>
+                    ) : (
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart
+                            data={salesData}
+                            margin={{
+                              top: 20,
+                              right: 30,
+                              left: 20,
+                              bottom: 5,
+                            }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="date" />
+                            <YAxis />
+                            <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                            <Line
+                              type="monotone"
+                              dataKey="revenue"
+                              name="Revenue"
+                              stroke="#8884d8"
+                              activeDot={{ r: 8 }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Top Products by Sales</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoading ? (
+                      <p className="text-center py-12 text-muted-foreground">Loading product data...</p>
+                    ) : topProducts.length === 0 ? (
+                      <p className="text-center py-12 text-muted-foreground">
+                        No product sales data available yet.
+                      </p>
+                    ) : (
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={topProducts}
+                            margin={{
+                              top: 20,
+                              right: 30,
+                              left: 20,
+                              bottom: 60,
+                            }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" angle={-45} textAnchor="end" height={70} />
+                            <YAxis />
+                            <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                            <Legend />
+                            <Bar dataKey="revenue" name="Revenue" fill="#8884d8" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>

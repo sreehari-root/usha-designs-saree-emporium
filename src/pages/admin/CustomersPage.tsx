@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Users, Search, Mail, Phone, Eye } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Users, Search, Mail, Phone, Eye, Loader2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -22,114 +22,43 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { format } from 'date-fns';
 import AdminLayout from '@/components/layout/AdminLayout';
-
-// Mock customers data
-const mockCustomers = [
-  {
-    id: 1,
-    name: 'Rahul Sharma',
-    email: 'rahul.s@example.com',
-    phone: '+91 98765 43210',
-    dateJoined: new Date(2024, 9, 15),
-    totalOrders: 5,
-    totalSpent: 27500,
-    lastOrder: new Date(2025, 4, 20),
-    address: {
-      street: '42 Brigade Road',
-      city: 'Bangalore',
-      state: 'Karnataka',
-      zipCode: '560001'
-    }
-  },
-  {
-    id: 2,
-    name: 'Priya Patel',
-    email: 'priya.p@example.com',
-    phone: '+91 87654 32109',
-    dateJoined: new Date(2025, 0, 10),
-    totalOrders: 3,
-    totalSpent: 15200,
-    lastOrder: new Date(2025, 4, 21),
-    address: {
-      street: '78 Park Street',
-      city: 'Mumbai',
-      state: 'Maharashtra',
-      zipCode: '400001'
-    }
-  },
-  {
-    id: 3,
-    name: 'Vijay Kumar',
-    email: 'vijay.k@example.com',
-    phone: '+91 76543 21098',
-    dateJoined: new Date(2024, 11, 5),
-    totalOrders: 7,
-    totalSpent: 42700,
-    lastOrder: new Date(2025, 4, 22),
-    address: {
-      street: '23 MG Road',
-      city: 'Delhi',
-      state: 'Delhi',
-      zipCode: '110001'
-    }
-  },
-  {
-    id: 4,
-    name: 'Ananya Singh',
-    email: 'ananya.s@example.com',
-    phone: '+91 65432 10987',
-    dateJoined: new Date(2025, 2, 18),
-    totalOrders: 2,
-    totalSpent: 9500,
-    lastOrder: new Date(2025, 4, 23),
-    address: {
-      street: '56 Gandhi Nagar',
-      city: 'Hyderabad',
-      state: 'Telangana',
-      zipCode: '500001'
-    }
-  },
-  {
-    id: 5,
-    name: 'Kiran Rao',
-    email: 'kiran.r@example.com',
-    phone: '+91 54321 09876',
-    dateJoined: new Date(2025, 1, 7),
-    totalOrders: 4,
-    totalSpent: 18800,
-    lastOrder: new Date(2025, 4, 19),
-    address: {
-      street: '89 Civil Lines',
-      city: 'Jaipur',
-      state: 'Rajasthan',
-      zipCode: '302001'
-    }
-  }
-];
-
-// Mock orders for customer detail view
-const mockCustomerOrders = [
-  { id: 'ORD-1001', date: new Date(2025, 4, 20), total: 12500, status: 'completed' },
-  { id: 'ORD-1002', date: new Date(2025, 3, 15), total: 7200, status: 'completed' },
-  { id: 'ORD-1003', date: new Date(2025, 2, 5), total: 4800, status: 'completed' },
-  { id: 'ORD-1004', date: new Date(2025, 1, 10), total: 3000, status: 'completed' }
-];
+import { CustomerType, fetchCustomers, getCustomerOrders } from '@/lib/api/customers';
+import { formatCurrency } from '@/lib/utils';
 
 const CustomersPage = () => {
-  const [customers, setCustomers] = useState(mockCustomers);
+  const [customers, setCustomers] = useState<CustomerType[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerType | null>(null);
+  const [customerOrders, setCustomerOrders] = useState<any[]>([]);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const customersPerPage = 10;
+  
+  useEffect(() => {
+    const loadCustomers = async () => {
+      setIsLoading(true);
+      try {
+        const data = await fetchCustomers();
+        setCustomers(data);
+      } catch (error) {
+        console.error('Error loading customers:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadCustomers();
+  }, []);
   
   // Filter customers based on search term
   const filteredCustomers = customers.filter(customer => {
     const searchLower = searchTerm.toLowerCase();
     return (
-      customer.name.toLowerCase().includes(searchLower) ||
-      customer.email.toLowerCase().includes(searchLower) ||
-      customer.phone.includes(searchTerm)
+      (customer.first_name && customer.first_name.toLowerCase().includes(searchLower)) ||
+      (customer.last_name && customer.last_name.toLowerCase().includes(searchLower)) ||
+      (customer.email && customer.email.toLowerCase().includes(searchLower)) ||
+      (customer.phone && customer.phone.includes(searchTerm))
     );
   });
   
@@ -139,17 +68,30 @@ const CustomersPage = () => {
   const currentCustomers = filteredCustomers.slice(indexOfFirstCustomer, indexOfLastCustomer);
   const pageCount = Math.ceil(filteredCustomers.length / customersPerPage);
   
-  const viewCustomer = (customer: any) => {
+  const viewCustomer = async (customer: CustomerType) => {
     setSelectedCustomer(customer);
     setIsViewModalOpen(true);
+    
+    try {
+      const orders = await getCustomerOrders(customer.id);
+      setCustomerOrders(orders);
+    } catch (error) {
+      console.error('Error fetching customer orders:', error);
+      setCustomerOrders([]);
+    }
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
+  const getInitials = (first?: string | null, last?: string | null) => {
+    let initials = '';
+    if (first) initials += first[0].toUpperCase();
+    if (last) initials += last[0].toUpperCase();
+    return initials || 'U';
+  };
+  
+  const getFullName = (customer: CustomerType) => {
+    const firstName = customer.first_name || '';
+    const lastName = customer.last_name || '';
+    return firstName || lastName ? `${firstName} ${lastName}`.trim() : 'Unknown User';
   };
 
   return (
@@ -193,56 +135,80 @@ const CustomersPage = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentCustomers.map((customer) => (
-                    <TableRow key={customer.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarFallback>{getInitials(customer.name)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{customer.name}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col space-y-1">
-                          <div className="flex items-center">
-                            <Mail className="mr-1 h-3 w-3 text-muted-foreground" />
-                            <span className="text-sm">{customer.email}</span>
-                          </div>
-                          <div className="flex items-center">
-                            <Phone className="mr-1 h-3 w-3 text-muted-foreground" />
-                            <span className="text-sm">{customer.phone}</span>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {format(customer.dateJoined, 'MMM dd, yyyy')}
-                      </TableCell>
-                      <TableCell>
-                        {customer.totalOrders}
-                      </TableCell>
-                      <TableCell>
-                        ₹{customer.totalSpent.toLocaleString('en-IN')}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => viewCustomer(customer)}
-                        >
-                          <Eye className="h-4 w-4" />
-                          <span className="sr-only">View</span>
-                        </Button>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                        <p className="mt-2 text-sm text-muted-foreground">Loading customers...</p>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : currentCustomers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        <Users className="h-10 w-10 mx-auto text-muted-foreground opacity-50" />
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          {filteredCustomers.length === 0 && customers.length > 0
+                            ? 'No customers found matching your search'
+                            : 'No customers yet'}
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    currentCustomers.map((customer) => (
+                      <TableRow key={customer.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarFallback>{getInitials(customer.first_name, customer.last_name)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{getFullName(customer)}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col space-y-1">
+                            {customer.email && (
+                              <div className="flex items-center">
+                                <Mail className="mr-1 h-3 w-3 text-muted-foreground" />
+                                <span className="text-sm">{customer.email}</span>
+                              </div>
+                            )}
+                            {customer.phone && (
+                              <div className="flex items-center">
+                                <Phone className="mr-1 h-3 w-3 text-muted-foreground" />
+                                <span className="text-sm">{customer.phone}</span>
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {customer.created_at ? format(new Date(customer.created_at), 'MMM dd, yyyy') : 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          {customer.orders_count || 0}
+                        </TableCell>
+                        <TableCell>
+                          {formatCurrency(customer.total_spent || 0)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => viewCustomer(customer)}
+                          >
+                            <Eye className="h-4 w-4" />
+                            <span className="sr-only">View</span>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>
             
-            {filteredCustomers.length > 0 && pageCount > 1 && (
+            {filteredCustomers.length > customersPerPage && (
               <div className="flex justify-center mt-4">
                 <Pagination>
                   <PaginationContent>
@@ -290,11 +256,13 @@ const CustomersPage = () => {
             <div className="space-y-6">
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
-                  <AvatarFallback className="text-lg">{getInitials(selectedCustomer.name)}</AvatarFallback>
+                  <AvatarFallback className="text-lg">{getInitials(selectedCustomer.first_name, selectedCustomer.last_name)}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <h2 className="text-xl font-bold">{selectedCustomer.name}</h2>
-                  <p className="text-muted-foreground">Customer since {format(selectedCustomer.dateJoined, 'MMMM dd, yyyy')}</p>
+                  <h2 className="text-xl font-bold">{getFullName(selectedCustomer)}</h2>
+                  <p className="text-muted-foreground">
+                    Customer since {format(new Date(selectedCustomer.created_at), 'MMMM dd, yyyy')}
+                  </p>
                 </div>
               </div>
               
@@ -303,24 +271,29 @@ const CustomersPage = () => {
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground">Contact Information</h3>
                     <div className="mt-1 space-y-1">
-                      <div className="flex items-center">
-                        <Mail className="mr-2 h-4 w-4 text-muted-foreground" />
-                        <span>{selectedCustomer.email}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
-                        <span>{selectedCustomer.phone}</span>
-                      </div>
+                      {selectedCustomer.email && (
+                        <div className="flex items-center">
+                          <Mail className="mr-2 h-4 w-4 text-muted-foreground" />
+                          <span>{selectedCustomer.email}</span>
+                        </div>
+                      )}
+                      {selectedCustomer.phone && (
+                        <div className="flex items-center">
+                          <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
+                          <span>{selectedCustomer.phone}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">Shipping Address</h3>
-                    <div className="mt-1">
-                      <p>{selectedCustomer.address.street}</p>
-                      <p>{selectedCustomer.address.city}, {selectedCustomer.address.state} {selectedCustomer.address.zipCode}</p>
+                  {selectedCustomer.address && (
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">Shipping Address</h3>
+                      <div className="mt-1">
+                        <p>{selectedCustomer.address}</p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
                 
                 <div className="space-y-4">
@@ -329,16 +302,20 @@ const CustomersPage = () => {
                     <div className="mt-1 space-y-1">
                       <div className="flex justify-between">
                         <span>Total Orders:</span>
-                        <span className="font-medium">{selectedCustomer.totalOrders}</span>
+                        <span className="font-medium">{selectedCustomer.orders_count || 0}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Total Spent:</span>
-                        <span className="font-medium">₹{selectedCustomer.totalSpent.toLocaleString('en-IN')}</span>
+                        <span className="font-medium">{formatCurrency(selectedCustomer.total_spent || 0)}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Last Order:</span>
-                        <span className="font-medium">{format(selectedCustomer.lastOrder, 'MMM dd, yyyy')}</span>
-                      </div>
+                      {selectedCustomer.last_order_date && (
+                        <div className="flex justify-between">
+                          <span>Last Order:</span>
+                          <span className="font-medium">
+                            {format(new Date(selectedCustomer.last_order_date), 'MMM dd, yyyy')}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -357,18 +334,30 @@ const CustomersPage = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {mockCustomerOrders.map((order) => (
-                        <TableRow key={order.id}>
-                          <TableCell className="font-medium">{order.id}</TableCell>
-                          <TableCell>{format(order.date, 'MMM dd, yyyy')}</TableCell>
-                          <TableCell>₹{order.total.toLocaleString('en-IN')}</TableCell>
-                          <TableCell>
-                            <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-green-50 text-green-700">
-                              {order.status}
-                            </span>
+                      {customerOrders.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-4">
+                            <p className="text-sm text-muted-foreground">No orders yet</p>
                           </TableCell>
                         </TableRow>
-                      ))}
+                      ) : (
+                        customerOrders.map((order) => (
+                          <TableRow key={order.id}>
+                            <TableCell className="font-medium">{order.id.slice(0, 8)}</TableCell>
+                            <TableCell>{format(new Date(order.created_at), 'MMM dd, yyyy')}</TableCell>
+                            <TableCell>{formatCurrency(order.total)}</TableCell>
+                            <TableCell>
+                              <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                                order.status === 'completed' ? 'bg-green-50 text-green-700' :
+                                order.status === 'processing' ? 'bg-blue-50 text-blue-700' :
+                                'bg-amber-50 text-amber-700'
+                              }`}>
+                                {order.status}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </div>

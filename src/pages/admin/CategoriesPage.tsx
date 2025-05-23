@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Tag, PlusCircle, Search, Edit, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Tag, PlusCircle, Search, Edit, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,31 +18,57 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import AdminLayout from '@/components/layout/AdminLayout';
-
-// Mock categories data
-const mockCategories = [
-  { id: 1, name: 'Sarees', productCount: 32, description: 'Traditional and designer sarees' },
-  { id: 2, name: 'Lehengas', productCount: 18, description: 'Wedding and festive lehengas' },
-  { id: 3, name: 'Kurtas', productCount: 45, description: 'Casual and ethnic kurtas' },
-  { id: 4, name: 'Jewelry', productCount: 62, description: 'Traditional and contemporary jewelry' },
-  { id: 5, name: 'Footwear', productCount: 27, description: 'Ethnic and designer footwear' },
-  { id: 6, name: 'Accessories', productCount: 40, description: 'Fashion accessories and bags' }
-];
+import { 
+  CategoryType, 
+  fetchCategories, 
+  addCategory, 
+  updateCategory, 
+  deleteCategory,
+  getProductCountByCategory 
+} from '@/lib/api/categories';
 
 const CategoriesPage = () => {
   const { toast } = useToast();
-  const [categories, setCategories] = useState(mockCategories);
+  const [categories, setCategories] = useState<CategoryType[]>([]);
+  const [productCounts, setProductCounts] = useState<Record<string, number>>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<any>(null);
+  const [selectedCategory, setSelectedCategory] = useState<CategoryType | null>(null);
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
   const [isLoading, setIsLoading] = useState(false);
   
+  useEffect(() => {
+    const loadCategories = async () => {
+      setIsLoading(true);
+      try {
+        const categoriesData = await fetchCategories();
+        setCategories(categoriesData);
+        
+        // Fetch product counts for each category
+        const counts: Record<string, number> = {};
+        for (const category of categoriesData) {
+          counts[category.id] = await getProductCountByCategory(category.id);
+        }
+        setProductCounts(counts);
+      } catch (error) {
+        console.error('Error loading categories:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load categories',
+          variant: 'destructive'
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadCategories();
+  }, [toast]);
+  
   // Filter categories based on search term
   const filteredCategories = categories.filter(category =>
-    category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    category.description.toLowerCase().includes(searchTerm.toLowerCase())
+    category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -54,68 +80,75 @@ const CategoriesPage = () => {
     }
   };
   
-  const handleAddCategory = (e: React.FormEvent) => {
+  const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // In a real app, this would be a database insert
-    setTimeout(() => {
-      const newId = Math.max(...categories.map(category => category.id)) + 1;
-      const categoryToAdd = {
-        ...newCategory,
-        id: newId,
-        productCount: 0
-      };
-      
-      setCategories([...categories, categoryToAdd]);
-      setIsAddDialogOpen(false);
-      setNewCategory({ name: '', description: '' });
-      
-      toast({
-        title: "Category added",
-        description: "The new category has been successfully created.",
-      });
+    try {
+      const category = await addCategory(newCategory.name);
+      if (category) {
+        setCategories([...categories, category]);
+        setProductCounts({
+          ...productCounts,
+          [category.id]: 0
+        });
+        setIsAddDialogOpen(false);
+        setNewCategory({ name: '', description: '' });
+      }
+    } catch (error) {
+      console.error('Error adding category:', error);
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
   
-  const handleEditCategory = (e: React.FormEvent) => {
+  const handleEditCategory = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    if (!selectedCategory) return;
     
-    // In a real app, this would be a database update
-    setTimeout(() => {
-      const updatedCategories = categories.map(category =>
-        category.id === selectedCategory.id ? selectedCategory : category
-      );
-      
-      setCategories(updatedCategories);
-      setIsEditDialogOpen(false);
-      
-      toast({
-        title: "Category updated",
-        description: "The category has been successfully updated.",
-      });
+    setIsLoading(true);
+    try {
+      const updatedCategory = await updateCategory(selectedCategory.id, selectedCategory.name);
+      if (updatedCategory) {
+        setCategories(categories.map(category => 
+          category.id === updatedCategory.id ? updatedCategory : category
+        ));
+        setIsEditDialogOpen(false);
+      }
+    } catch (error) {
+      console.error('Error updating category:', error);
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
   
-  const handleDeleteCategory = (categoryId: number) => {
-    setIsLoading(true);
-    
-    // In a real app, this would be a database delete
-    setTimeout(() => {
-      setCategories(categories.filter(category => category.id !== categoryId));
-      
+  const handleDeleteCategory = async (categoryId: string) => {
+    // Check if the category has products
+    if (productCounts[categoryId] > 0) {
       toast({
-        title: "Category deleted",
-        description: "The category has been successfully removed.",
+        title: "Cannot Delete",
+        description: `This category has ${productCounts[categoryId]} products and cannot be deleted.`,
+        variant: "destructive"
       });
+      return;
+    }
+    
+    if (window.confirm('Are you sure you want to delete this category?')) {
+      setIsLoading(true);
+      const success = await deleteCategory(categoryId);
+      if (success) {
+        setCategories(categories.filter(category => category.id !== categoryId));
+        
+        // Remove from product counts
+        const newProductCounts = { ...productCounts };
+        delete newProductCounts[categoryId];
+        setProductCounts(newProductCounts);
+      }
       setIsLoading(false);
-    }, 500);
+    }
   };
   
-  const openEditDialog = (category: any) => {
+  const openEditDialog = (category: CategoryType) => {
     setSelectedCategory(category);
     setIsEditDialogOpen(true);
   };
@@ -151,18 +184,6 @@ const CategoriesPage = () => {
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    name="description"
-                    value={newCategory.description}
-                    onChange={handleInputChange}
-                    rows={3}
-                    required
-                  />
-                </div>
-                
                 <div className="flex justify-end space-x-2 pt-4">
                   <Button 
                     type="button" 
@@ -172,7 +193,12 @@ const CategoriesPage = () => {
                     Cancel
                   </Button>
                   <Button type="submit" disabled={isLoading}>
-                    {isLoading ? "Adding..." : "Add Category"}
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Adding...
+                      </>
+                    ) : "Add Category"}
                   </Button>
                 </div>
               </form>
@@ -203,53 +229,74 @@ const CategoriesPage = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Description</TableHead>
                     <TableHead>Products</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCategories.map((category) => (
-                    <TableRow key={category.id}>
-                      <TableCell className="font-medium">{category.name}</TableCell>
-                      <TableCell>{category.description}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {category.productCount} items
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditDialog(category)}
-                          >
-                            <Edit className="h-4 w-4" />
-                            <span className="sr-only">Edit</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteCategory(category.id)}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Delete</span>
-                          </Button>
-                        </div>
+                  {isLoading && categories.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                        <p className="mt-2 text-sm text-muted-foreground">Loading categories...</p>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : filteredCategories.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-center py-8">
+                        <Tag className="h-10 w-10 mx-auto text-muted-foreground opacity-50" />
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          {searchTerm ? 'No categories found matching your search' : 'No categories yet'}
+                        </p>
+                        {!searchTerm && (
+                          <Button
+                            variant="outline"
+                            className="mt-4"
+                            onClick={() => setIsAddDialogOpen(true)}
+                          >
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Create Your First Category
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredCategories.map((category) => (
+                      <TableRow key={category.id}>
+                        <TableCell className="font-medium">{category.name}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {productCounts[category.id] || 0} items
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEditDialog(category)}
+                            >
+                              <Edit className="h-4 w-4" />
+                              <span className="sr-only">Edit</span>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteCategory(category.id)}
+                              className="text-red-600"
+                              disabled={productCounts[category.id] > 0}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              <span className="sr-only">Delete</span>
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>
-            
-            {filteredCategories.length === 0 && (
-              <div className="text-center py-6">
-                <p className="text-muted-foreground">No categories found. Try a different search term or add a new category.</p>
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
@@ -273,18 +320,6 @@ const CategoriesPage = () => {
                 />
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="edit-description">Description</Label>
-                <Textarea
-                  id="edit-description"
-                  name="description"
-                  value={selectedCategory.description}
-                  onChange={handleInputChange}
-                  rows={3}
-                  required
-                />
-              </div>
-              
               <div className="flex justify-end space-x-2 pt-4">
                 <Button 
                   type="button" 
@@ -294,7 +329,12 @@ const CategoriesPage = () => {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Saving..." : "Save Changes"}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : "Save Changes"}
                 </Button>
               </div>
             </form>
