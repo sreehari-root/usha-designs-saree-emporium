@@ -18,11 +18,30 @@ export interface WishlistItem {
 
 export const addToWishlist = async (productId: string): Promise<boolean> => {
   try {
+    console.log('Adding to wishlist - Product ID:', productId);
+    
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast({
         title: "Authentication Required",
         description: "Please log in to add items to wishlist.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    // Verify product exists
+    const { data: product, error: productError } = await supabase
+      .from('products')
+      .select('id, name')
+      .eq('id', productId)
+      .single();
+
+    if (productError || !product) {
+      console.error('Product not found:', productError);
+      toast({
+        title: "Error",
+        description: "Product not found.",
         variant: "destructive"
       });
       return false;
@@ -51,11 +70,14 @@ export const addToWishlist = async (productId: string): Promise<boolean> => {
         product_id: productId
       });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error adding to wishlist:', error);
+      throw error;
+    }
 
     toast({
       title: "Added to Wishlist",
-      description: "Product has been added to your wishlist.",
+      description: `${product.name} has been added to your wishlist.`,
     });
 
     return true;
@@ -63,7 +85,7 @@ export const addToWishlist = async (productId: string): Promise<boolean> => {
     console.error('Error adding to wishlist:', error);
     toast({
       title: "Error",
-      description: "Failed to add product to wishlist.",
+      description: "Failed to add product to wishlist. Please try again.",
       variant: "destructive"
     });
     return false;
@@ -109,7 +131,7 @@ export const getWishlistItems = async (): Promise<WishlistItem[]> => {
       .from('wishlists')
       .select(`
         *,
-        products!inner(id, name, price, image, discount)
+        products(id, name, price, image, discount)
       `)
       .eq('user_id', user.id);
 

@@ -29,6 +29,8 @@ export interface OrderItem {
   };
 }
 
+export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'completed' | 'cancelled';
+
 export const fetchOrders = async (): Promise<Order[]> => {
   try {
     const { data: orders, error } = await supabase
@@ -69,7 +71,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
   }
 };
 
-export const updateOrderStatus = async (orderId: string, status: string): Promise<boolean> => {
+export const updateOrderStatus = async (orderId: string, status: OrderStatus): Promise<boolean> => {
   try {
     const { error } = await supabase
       .from('orders')

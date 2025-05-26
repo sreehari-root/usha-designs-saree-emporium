@@ -46,24 +46,31 @@ export default function ProductCard({
   }, [id]);
 
   const handleAddToCart = async () => {
+    console.log('Add to cart clicked for product:', id);
     setIsAddingToCart(true);
-    await addToCart(id, 1);
+    const success = await addToCart(id, 1);
+    console.log('Add to cart result:', success);
     setIsAddingToCart(false);
   };
 
   const handleWishlistToggle = async () => {
+    console.log('Wishlist toggle clicked for product:', id);
     setIsWishlistLoading(true);
+    let success = false;
+    
     if (isInWishlistState) {
-      const success = await removeFromWishlist(id);
+      success = await removeFromWishlist(id);
       if (success) {
         setIsInWishlistState(false);
       }
     } else {
-      const success = await addToWishlist(id);
+      success = await addToWishlist(id);
       if (success) {
         setIsInWishlistState(true);
       }
     }
+    
+    console.log('Wishlist toggle result:', success);
     setIsWishlistLoading(false);
   };
   

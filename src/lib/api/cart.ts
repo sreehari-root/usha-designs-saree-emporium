@@ -54,11 +54,40 @@ export const getOrCreateCart = async (): Promise<string | null> => {
 
 export const addToCart = async (productId: string, quantity: number = 1): Promise<boolean> => {
   try {
-    const cartId = await getOrCreateCart();
-    if (!cartId) {
+    console.log('Adding to cart - Product ID:', productId, 'Quantity:', quantity);
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
       toast({
         title: "Authentication Required",
         description: "Please log in to add items to cart.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    const cartId = await getOrCreateCart();
+    if (!cartId) {
+      toast({
+        title: "Error",
+        description: "Failed to create cart.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    // Verify product exists
+    const { data: product, error: productError } = await supabase
+      .from('products')
+      .select('id, name, stock')
+      .eq('id', productId)
+      .single();
+
+    if (productError || !product) {
+      console.error('Product not found:', productError);
+      toast({
+        title: "Error",
+        description: "Product not found.",
         variant: "destructive"
       });
       return false;
@@ -74,16 +103,41 @@ export const addToCart = async (productId: string, quantity: number = 1): Promis
 
     if (existingItem) {
       // Update quantity if item exists
+      const newQuantity = existingItem.quantity + quantity;
+      
+      // Check stock availability
+      if (product.stock && newQuantity > product.stock) {
+        toast({
+          title: "Insufficient Stock",
+          description: `Only ${product.stock} items available.`,
+          variant: "destructive"
+        });
+        return false;
+      }
+
       const { error } = await supabase
         .from('cart_items')
         .update({ 
-          quantity: existingItem.quantity + quantity,
+          quantity: newQuantity,
           updated_at: new Date().toISOString()
         })
         .eq('id', existingItem.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating cart item:', error);
+        throw error;
+      }
     } else {
+      // Check stock availability for new item
+      if (product.stock && quantity > product.stock) {
+        toast({
+          title: "Insufficient Stock",
+          description: `Only ${product.stock} items available.`,
+          variant: "destructive"
+        });
+        return false;
+      }
+
       // Insert new item
       const { error } = await supabase
         .from('cart_items')
@@ -93,12 +147,15 @@ export const addToCart = async (productId: string, quantity: number = 1): Promis
           quantity
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error inserting cart item:', error);
+        throw error;
+      }
     }
 
     toast({
       title: "Added to Cart",
-      description: "Product has been added to your cart.",
+      description: `${product.name} has been added to your cart.`,
     });
 
     return true;
@@ -106,7 +163,7 @@ export const addToCart = async (productId: string, quantity: number = 1): Promis
     console.error('Error adding to cart:', error);
     toast({
       title: "Error",
-      description: "Failed to add product to cart.",
+      description: "Failed to add product to cart. Please try again.",
       variant: "destructive"
     });
     return false;
@@ -122,7 +179,7 @@ export const getCartItems = async (): Promise<CartItem[]> => {
       .from('cart_items')
       .select(`
         *,
-        products!inner(id, name, price, image, discount)
+        products(id, name, price, image, discount, stock)
       `)
       .eq('cart_id', cartId);
 
