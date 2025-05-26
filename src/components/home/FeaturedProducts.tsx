@@ -23,7 +23,7 @@ export default function FeaturedProducts() {
           {featuredProducts.map((product, index) => (
             <ProductCard
               key={product.id}
-              id={product.id}
+              id={product.id.toString()}
               name={product.name}
               price={product.price}
               discount={product.discount}

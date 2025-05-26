@@ -13,10 +13,7 @@ export interface Review {
     name: string;
     image: string | null;
   };
-  profiles?: {
-    first_name: string;
-    last_name: string;
-  };
+  customer_name?: string;
 }
 
 export const fetchReviews = async (): Promise<Review[]> => {
@@ -25,12 +22,28 @@ export const fetchReviews = async (): Promise<Review[]> => {
       .from('reviews')
       .select(`
         *,
-        products!inner(name, image),
-        profiles!inner(first_name, last_name)
+        products(name, image)
       `)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
+
+    // Get user profiles separately to avoid join issues
+    if (reviews && reviews.length > 0) {
+      const userIds = [...new Set(reviews.map(review => review.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', userIds);
+
+      // Map profile data to reviews
+      return reviews.map(review => ({
+        ...review,
+        customer_name: profiles?.find(p => p.id === review.user_id) 
+          ? `${profiles.find(p => p.id === review.user_id)?.first_name} ${profiles.find(p => p.id === review.user_id)?.last_name}`.trim()
+          : 'Anonymous User'
+      }));
+    }
 
     return reviews || [];
   } catch (error) {

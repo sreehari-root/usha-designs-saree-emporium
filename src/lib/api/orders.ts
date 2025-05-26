@@ -12,10 +12,8 @@ export interface Order {
   created_at: string;
   updated_at: string;
   order_items?: OrderItem[];
-  profiles?: {
-    first_name: string;
-    last_name: string;
-  };
+  customer_name?: string;
+  customer_email?: string;
 }
 
 export interface OrderItem {
@@ -37,15 +35,32 @@ export const fetchOrders = async (): Promise<Order[]> => {
       .from('orders')
       .select(`
         *,
-        profiles!inner(first_name, last_name),
         order_items(
           *,
-          products!inner(name, image)
+          products(name, image)
         )
       `)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
+
+    // Get user profiles separately to avoid join issues
+    if (orders && orders.length > 0) {
+      const userIds = [...new Set(orders.map(order => order.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', userIds);
+
+      // Map profile data to orders
+      return orders.map(order => ({
+        ...order,
+        customer_name: profiles?.find(p => p.id === order.user_id) 
+          ? `${profiles.find(p => p.id === order.user_id)?.first_name} ${profiles.find(p => p.id === order.user_id)?.last_name}`.trim()
+          : 'Unknown Customer',
+        customer_email: 'email@example.com' // You might want to get this from auth.users if needed
+      }));
+    }
 
     return orders || [];
   } catch (error) {
