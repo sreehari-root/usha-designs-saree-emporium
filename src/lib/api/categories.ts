@@ -17,6 +17,7 @@ export const fetchCategories = async (): Promise<CategoryType[]> => {
       .order('name', { ascending: true });
 
     if (error) {
+      console.error('Error fetching categories:', error);
       throw error;
     }
 
@@ -35,6 +36,7 @@ export const getProductCountByCategory = async (categoryId: string): Promise<num
       .eq('category_id', categoryId);
 
     if (error) {
+      console.error('Error getting product count:', error);
       throw error;
     }
 
@@ -47,17 +49,47 @@ export const getProductCountByCategory = async (categoryId: string): Promise<num
 
 export const addCategory = async (name: string): Promise<CategoryType | null> => {
   try {
+    // Validate input
+    if (!name || name.trim().length === 0) {
+      toast({
+        title: "Error",
+        description: "Category name is required.",
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    // Check if category already exists
+    const { data: existingCategory, error: checkError } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('name', name.trim())
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking existing category:', checkError);
+      throw checkError;
+    }
+
+    if (existingCategory) {
+      toast({
+        title: "Error",
+        description: "A category with this name already exists.",
+        variant: "destructive"
+      });
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('categories')
       .insert({
-        name,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        name: name.trim()
       })
       .select()
       .single();
 
     if (error) {
+      console.error('Error adding category:', error);
       throw error;
     }
 
@@ -80,17 +112,49 @@ export const addCategory = async (name: string): Promise<CategoryType | null> =>
 
 export const updateCategory = async (id: string, name: string): Promise<CategoryType | null> => {
   try {
+    // Validate input
+    if (!name || name.trim().length === 0) {
+      toast({
+        title: "Error",
+        description: "Category name is required.",
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    // Check if another category with the same name exists
+    const { data: existingCategory, error: checkError } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('name', name.trim())
+      .neq('id', id)
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking existing category:', checkError);
+      throw checkError;
+    }
+
+    if (existingCategory) {
+      toast({
+        title: "Error",
+        description: "A category with this name already exists.",
+        variant: "destructive"
+      });
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('categories')
       .update({
-        name,
-        updated_at: new Date().toISOString()
+        name: name.trim()
       })
       .eq('id', id)
       .select()
       .single();
 
     if (error) {
+      console.error('Error updating category:', error);
       throw error;
     }
 
@@ -120,6 +184,7 @@ export const deleteCategory = async (id: string): Promise<boolean> => {
       .eq('category_id', id);
 
     if (countError) {
+      console.error('Error checking product count:', countError);
       throw countError;
     }
 
@@ -138,6 +203,7 @@ export const deleteCategory = async (id: string): Promise<boolean> => {
       .eq('id', id);
 
     if (error) {
+      console.error('Error deleting category:', error);
       throw error;
     }
 

@@ -37,7 +37,7 @@ export const addToWishlist = async (productId: string): Promise<boolean> => {
       .eq('id', productId)
       .single();
 
-    if (productError || !product) {
+    if (productError) {
       console.error('Product not found:', productError);
       toast({
         title: "Error",
@@ -47,13 +47,27 @@ export const addToWishlist = async (productId: string): Promise<boolean> => {
       return false;
     }
 
+    if (!product) {
+      toast({
+        title: "Error",
+        description: "Product not found.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
     // Check if item already exists in wishlist
-    const { data: existingItem } = await supabase
+    const { data: existingItem, error: existingError } = await supabase
       .from('wishlists')
       .select('id')
       .eq('user_id', user.id)
       .eq('product_id', productId)
       .single();
+
+    if (existingError && existingError.code !== 'PGRST116') {
+      console.error('Error checking existing wishlist item:', existingError);
+      throw existingError;
+    }
 
     if (existingItem) {
       toast({
@@ -103,7 +117,10 @@ export const removeFromWishlist = async (productId: string): Promise<boolean> =>
       .eq('user_id', user.id)
       .eq('product_id', productId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error removing from wishlist:', error);
+      throw error;
+    }
 
     toast({
       title: "Removed from Wishlist",
@@ -135,12 +152,15 @@ export const getWishlistItems = async (): Promise<WishlistItem[]> => {
       `)
       .eq('user_id', user.id);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching wishlist items:', error);
+      throw error;
+    }
 
-    return data.map(item => ({
+    return data?.map(item => ({
       ...item,
       product: item.products
-    }));
+    })) || [];
   } catch (error) {
     console.error('Error fetching wishlist items:', error);
     return [];
@@ -152,15 +172,21 @@ export const isInWishlist = async (productId: string): Promise<boolean> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('wishlists')
       .select('id')
       .eq('user_id', user.id)
       .eq('product_id', productId)
       .single();
 
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error checking wishlist:', error);
+      return false;
+    }
+
     return !!data;
   } catch (error) {
+    console.error('Error checking wishlist:', error);
     return false;
   }
 };

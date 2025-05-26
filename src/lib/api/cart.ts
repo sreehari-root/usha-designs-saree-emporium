@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
@@ -21,7 +20,10 @@ export interface CartItem {
 export const getOrCreateCart = async (): Promise<string | null> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+    if (!user) {
+      console.log('No authenticated user found');
+      return null;
+    }
 
     // Check if user has an existing cart
     const { data: existingCart, error: cartError } = await supabase
@@ -31,7 +33,13 @@ export const getOrCreateCart = async (): Promise<string | null> => {
       .single();
 
     if (existingCart) {
+      console.log('Found existing cart:', existingCart.id);
       return existingCart.id;
+    }
+
+    if (cartError && cartError.code !== 'PGRST116') {
+      console.error('Error checking for existing cart:', cartError);
+      throw cartError;
     }
 
     // Create new cart if none exists
@@ -42,9 +50,11 @@ export const getOrCreateCart = async (): Promise<string | null> => {
       .single();
 
     if (createError) {
+      console.error('Error creating new cart:', createError);
       throw createError;
     }
 
+    console.log('Created new cart:', newCart.id);
     return newCart.id;
   } catch (error) {
     console.error('Error getting or creating cart:', error);
@@ -76,14 +86,14 @@ export const addToCart = async (productId: string, quantity: number = 1): Promis
       return false;
     }
 
-    // Verify product exists
+    // Verify product exists and get details
     const { data: product, error: productError } = await supabase
       .from('products')
       .select('id, name, stock')
       .eq('id', productId)
       .single();
 
-    if (productError || !product) {
+    if (productError) {
       console.error('Product not found:', productError);
       toast({
         title: "Error",
@@ -93,13 +103,27 @@ export const addToCart = async (productId: string, quantity: number = 1): Promis
       return false;
     }
 
+    if (!product) {
+      toast({
+        title: "Error",
+        description: "Product not found.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
     // Check if item already exists in cart
-    const { data: existingItem } = await supabase
+    const { data: existingItem, error: existingError } = await supabase
       .from('cart_items')
       .select('id, quantity')
       .eq('cart_id', cartId)
       .eq('product_id', productId)
       .single();
+
+    if (existingError && existingError.code !== 'PGRST116') {
+      console.error('Error checking existing cart item:', existingError);
+      throw existingError;
+    }
 
     if (existingItem) {
       // Update quantity if item exists
@@ -117,10 +141,7 @@ export const addToCart = async (productId: string, quantity: number = 1): Promis
 
       const { error } = await supabase
         .from('cart_items')
-        .update({ 
-          quantity: newQuantity,
-          updated_at: new Date().toISOString()
-        })
+        .update({ quantity: newQuantity })
         .eq('id', existingItem.id);
 
       if (error) {

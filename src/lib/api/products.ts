@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
@@ -26,18 +25,19 @@ export const fetchProducts = async (): Promise<ProductType[]> => {
       .from('products')
       .select(`
         *,
-        categories!inner(name)
+        categories(name)
       `)
       .order('created_at', { ascending: false });
 
     if (error) {
+      console.error('Error fetching products:', error);
       throw error;
     }
 
-    const productsWithCategories = products.map(product => ({
+    const productsWithCategories = products?.map(product => ({
       ...product,
-      category_name: product.categories?.name
-    }));
+      category_name: product.categories?.name || 'Uncategorized'
+    })) || [];
 
     return productsWithCategories;
   } catch (error) {
@@ -48,6 +48,25 @@ export const fetchProducts = async (): Promise<ProductType[]> => {
 
 export const addProduct = async (productData: Partial<ProductType>, imageFile?: File): Promise<ProductType | null> => {
   try {
+    // Validate required fields
+    if (!productData.name || productData.name.trim().length === 0) {
+      toast({
+        title: "Error",
+        description: "Product name is required.",
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    if (!productData.price || productData.price <= 0) {
+      toast({
+        title: "Error",
+        description: "Valid product price is required.",
+        variant: "destructive"
+      });
+      return null;
+    }
+
     let imagePath = null;
 
     if (imageFile) {
@@ -59,6 +78,7 @@ export const addProduct = async (productData: Partial<ProductType>, imageFile?: 
         .upload(filePath, imageFile);
 
       if (uploadError) {
+        console.error('Error uploading image:', uploadError);
         throw uploadError;
       }
 
@@ -69,20 +89,23 @@ export const addProduct = async (productData: Partial<ProductType>, imageFile?: 
     const { data, error } = await supabase
       .from('products')
       .insert({
-        name: productData.name!,
-        price: productData.price!,
-        description: productData.description,
-        discount: productData.discount,
-        category_id: productData.category_id,
-        stock: productData.stock,
-        featured: productData.featured,
-        bestseller: productData.bestseller,
+        name: productData.name.trim(),
+        price: productData.price,
+        description: productData.description?.trim() || null,
+        discount: productData.discount || 0,
+        category_id: productData.category_id || null,
+        stock: productData.stock || 0,
+        featured: productData.featured || false,
+        bestseller: productData.bestseller || false,
         image: imagePath,
+        rating: 0,
+        sales_count: 0
       })
       .select()
       .single();
 
     if (error) {
+      console.error('Error adding product:', error);
       throw error;
     }
 
@@ -109,6 +132,25 @@ export const updateProduct = async (
   imageFile?: File
 ): Promise<ProductType | null> => {
   try {
+    // Validate required fields
+    if (!productData.name || productData.name.trim().length === 0) {
+      toast({
+        title: "Error",
+        description: "Product name is required.",
+        variant: "destructive"
+      });
+      return null;
+    }
+
+    if (!productData.price || productData.price <= 0) {
+      toast({
+        title: "Error",
+        description: "Valid product price is required.",
+        variant: "destructive"
+      });
+      return null;
+    }
+
     let imagePath = productData.image;
 
     if (imageFile) {
@@ -120,6 +162,7 @@ export const updateProduct = async (
         .upload(filePath, imageFile);
 
       if (uploadError) {
+        console.error('Error uploading image:', uploadError);
         throw uploadError;
       }
 
@@ -130,22 +173,22 @@ export const updateProduct = async (
     const { data, error } = await supabase
       .from('products')
       .update({
-        name: productData.name,
+        name: productData.name.trim(),
         price: productData.price,
-        description: productData.description,
-        discount: productData.discount,
-        category_id: productData.category_id,
-        stock: productData.stock,
-        featured: productData.featured,
-        bestseller: productData.bestseller,
-        image: imagePath,
-        updated_at: new Date().toISOString(),
+        description: productData.description?.trim() || null,
+        discount: productData.discount || 0,
+        category_id: productData.category_id || null,
+        stock: productData.stock || 0,
+        featured: productData.featured || false,
+        bestseller: productData.bestseller || false,
+        image: imagePath
       })
       .eq('id', id)
       .select()
       .single();
 
     if (error) {
+      console.error('Error updating product:', error);
       throw error;
     }
 
