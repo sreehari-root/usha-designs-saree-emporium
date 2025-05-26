@@ -1,13 +1,15 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart } from 'lucide-react';
+import { Heart, ShoppingCart, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency, calculateDiscountPrice, getStarRating } from '@/lib/utils';
+import { addToCart } from '@/lib/api/cart';
+import { addToWishlist, removeFromWishlist, isInWishlist } from '@/lib/api/wishlist';
 
 interface ProductCardProps {
-  id: number;
+  id: string;
   name: string;
   price: number;
   discount?: number;
@@ -29,10 +31,42 @@ export default function ProductCard({
   rating,
   salesCount
 }: ProductCardProps) {
-  // Calculate discounted price
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isInWishlistState, setIsInWishlistState] = useState(false);
+  const [isWishlistLoading, setIsWishlistLoading] = useState(false);
+
   const finalPrice = discount ? calculateDiscountPrice(price, discount) : price;
   
-  // Render star rating if provided
+  useEffect(() => {
+    const checkWishlistStatus = async () => {
+      const inWishlist = await isInWishlist(id);
+      setIsInWishlistState(inWishlist);
+    };
+    checkWishlistStatus();
+  }, [id]);
+
+  const handleAddToCart = async () => {
+    setIsAddingToCart(true);
+    await addToCart(id, 1);
+    setIsAddingToCart(false);
+  };
+
+  const handleWishlistToggle = async () => {
+    setIsWishlistLoading(true);
+    if (isInWishlistState) {
+      const success = await removeFromWishlist(id);
+      if (success) {
+        setIsInWishlistState(false);
+      }
+    } else {
+      const success = await addToWishlist(id);
+      if (success) {
+        setIsInWishlistState(true);
+      }
+    }
+    setIsWishlistLoading(false);
+  };
+  
   const renderStarRating = () => {
     if (!rating) return null;
     
@@ -51,7 +85,7 @@ export default function ProductCard({
       <div className="relative product-image-container">
         <Link to={`/product/${id}`}>
           <img 
-            src={image} 
+            src={image || '/placeholder.svg'} 
             alt={name} 
             className="w-full h-64 object-cover product-image"
           />
@@ -72,10 +106,18 @@ export default function ProductCard({
         <Button 
           variant="ghost" 
           size="icon"
-          className="absolute top-2 left-2 bg-white/80 hover:bg-white h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-          aria-label="Add to wishlist"
+          className={`absolute top-2 left-2 bg-white/80 hover:bg-white h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+            isInWishlistState ? 'text-red-500' : 'text-gray-600'
+          }`}
+          aria-label={isInWishlistState ? 'Remove from wishlist' : 'Add to wishlist'}
+          onClick={handleWishlistToggle}
+          disabled={isWishlistLoading}
         >
-          <Heart size={16} />
+          {isWishlistLoading ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <Heart size={16} fill={isInWishlistState ? 'currentColor' : 'none'} />
+          )}
         </Button>
       </div>
       
@@ -128,9 +170,20 @@ export default function ProductCard({
         <div className="mt-4">
           <Button 
             className="w-full bg-usha-burgundy hover:bg-usha-burgundy/90 text-white"
-            disabled={!inStock}
+            disabled={!inStock || isAddingToCart}
+            onClick={handleAddToCart}
           >
-            Add to Cart
+            {isAddingToCart ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Adding...
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                Add to Cart
+              </>
+            )}
           </Button>
         </div>
       </div>

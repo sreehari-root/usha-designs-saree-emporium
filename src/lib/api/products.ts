@@ -1,6 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { formatCurrency } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
 
 export interface ProductType {
@@ -18,50 +17,26 @@ export interface ProductType {
   sales_count: number | null;
   created_at: string;
   updated_at: string;
-}
-
-export interface ProductWithCategory extends ProductType {
   category_name?: string;
 }
 
-export const fetchProducts = async (): Promise<ProductWithCategory[]> => {
+export const fetchProducts = async (): Promise<ProductType[]> => {
   try {
     const { data: products, error } = await supabase
       .from('products')
-      .select('*')
+      .select(`
+        *,
+        categories!inner(name)
+      `)
       .order('created_at', { ascending: false });
 
     if (error) {
       throw error;
     }
 
-    // Get all category IDs from products
-    const categoryIds = products
-      .map(product => product.category_id)
-      .filter(Boolean) as string[];
-
-    // Fetch all categories for these IDs in one go
-    const { data: categories, error: categoriesError } = await supabase
-      .from('categories')
-      .select('id, name')
-      .in('id', categoryIds);
-
-    if (categoriesError) {
-      console.error('Error fetching categories:', categoriesError);
-    }
-
-    // Create a map of category ID to category name for quick lookup
-    const categoryMap = new Map();
-    if (categories) {
-      categories.forEach(category => {
-        categoryMap.set(category.id, category.name);
-      });
-    }
-
-    // Add category name to each product
     const productsWithCategories = products.map(product => ({
       ...product,
-      category_name: product.category_id ? categoryMap.get(product.category_id) : undefined
+      category_name: product.categories?.name
     }));
 
     return productsWithCategories;
@@ -75,7 +50,6 @@ export const addProduct = async (productData: Partial<ProductType>, imageFile?: 
   try {
     let imagePath = null;
 
-    // Upload image if provided
     if (imageFile) {
       const fileExt = imageFile.name.split('.').pop();
       const filePath = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
@@ -88,19 +62,22 @@ export const addProduct = async (productData: Partial<ProductType>, imageFile?: 
         throw uploadError;
       }
 
-      // Get public URL for the uploaded image
       const { data } = supabase.storage.from('product-images').getPublicUrl(filePath);
       imagePath = data.publicUrl;
     }
 
-    // Create product with image path
     const { data, error } = await supabase
       .from('products')
       .insert({
-        ...productData,
+        name: productData.name!,
+        price: productData.price!,
+        description: productData.description,
+        discount: productData.discount,
+        category_id: productData.category_id,
+        stock: productData.stock,
+        featured: productData.featured,
+        bestseller: productData.bestseller,
         image: imagePath,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -134,7 +111,6 @@ export const updateProduct = async (
   try {
     let imagePath = productData.image;
 
-    // Upload new image if provided
     if (imageFile) {
       const fileExt = imageFile.name.split('.').pop();
       const filePath = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
@@ -147,16 +123,21 @@ export const updateProduct = async (
         throw uploadError;
       }
 
-      // Get public URL for the uploaded image
       const { data } = supabase.storage.from('product-images').getPublicUrl(filePath);
       imagePath = data.publicUrl;
     }
 
-    // Update product
     const { data, error } = await supabase
       .from('products')
       .update({
-        ...productData,
+        name: productData.name,
+        price: productData.price,
+        description: productData.description,
+        discount: productData.discount,
+        category_id: productData.category_id,
+        stock: productData.stock,
+        featured: productData.featured,
+        bestseller: productData.bestseller,
         image: imagePath,
         updated_at: new Date().toISOString(),
       })
@@ -187,7 +168,6 @@ export const updateProduct = async (
 
 export const deleteProduct = async (id: string): Promise<boolean> => {
   try {
-    // Get product details to know which image to delete
     const { data: product, error: fetchError } = await supabase
       .from('products')
       .select('image')
@@ -198,7 +178,6 @@ export const deleteProduct = async (id: string): Promise<boolean> => {
       throw fetchError;
     }
 
-    // Delete the product
     const { error } = await supabase
       .from('products')
       .delete()
@@ -208,7 +187,6 @@ export const deleteProduct = async (id: string): Promise<boolean> => {
       throw error;
     }
 
-    // If product had an image, try to delete it from storage
     if (product && product.image) {
       try {
         const imagePath = product.image.split('/').pop();
@@ -217,7 +195,6 @@ export const deleteProduct = async (id: string): Promise<boolean> => {
         }
       } catch (imageError) {
         console.error('Error deleting product image:', imageError);
-        // Continue even if image deletion fails
       }
     }
 

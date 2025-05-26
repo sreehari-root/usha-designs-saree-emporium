@@ -58,13 +58,8 @@ export default function AdminDashboard() {
     loadDashboardData();
   }, []);
 
-  const handleLogout = async () => {
-    await signOut();
-  };
-
   return (
     <AdminLayout>
-      {/* Top header */}
       <header className="border-b bg-background p-4">
         <div className="container flex justify-between items-center">
           <h1 className="text-xl font-bold">Dashboard</h1>
@@ -79,7 +74,6 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      {/* Dashboard content */}
       <div className="flex-1 p-6 overflow-auto">
         <div className="container">
           <DashboardStats stats={stats} salesData={salesData} isLoading={isLoading} />
