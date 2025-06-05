@@ -1,11 +1,15 @@
 
 import React from 'react';
 import ProductCard from '@/components/products/ProductCard';
-import { mockProducts } from '@/lib/constants';
+import { useFeaturedProducts } from '@/hooks/useProducts';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function FeaturedProducts() {
-  // For featured products, we'll use the first 4 products from our mock data
-  const featuredProducts = mockProducts.slice(0, 4);
+  const { data: featuredProducts, isLoading, error } = useFeaturedProducts();
+  
+  if (error) {
+    console.error('Error fetching featured products:', error);
+  }
   
   return (
     <section className="py-12 bg-muted/30">
@@ -20,20 +24,35 @@ export default function FeaturedProducts() {
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featuredProducts.map((product, index) => (
-            <ProductCard
-              key={product.id}
-              id={product.id.toString()}
-              name={product.name}
-              price={product.price}
-              discount={product.discount}
-              image={product.image}
-              category={product.category}
-              inStock={product.inStock}
-              rating={product.rating}
-              salesCount={product.salesCount}
-            />
-          ))}
+          {isLoading ? (
+            // Loading skeletons
+            Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="space-y-4">
+                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            ))
+          ) : featuredProducts && featuredProducts.length > 0 ? (
+            featuredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                id={product.id}
+                name={product.name}
+                price={product.price}
+                discount={product.discount || 0}
+                image={product.image || '/placeholder.svg'}
+                category={product.category_name || 'Uncategorized'}
+                inStock={(product.stock || 0) > 0}
+                rating={product.rating ? Number(product.rating) : undefined}
+                salesCount={product.sales_count || 0}
+              />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-8 text-muted-foreground">
+              No featured products available
+            </div>
+          )}
         </div>
       </div>
     </section>

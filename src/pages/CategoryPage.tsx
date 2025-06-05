@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Slider } from "@/components/ui/slider"
@@ -7,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Checkbox } from "@/components/ui/checkbox"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
 import { Badge } from "@/components/ui/badge"
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
@@ -19,12 +17,16 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ChevronDown, ChevronsUpDown } from "lucide-react"
 import MainLayout from '@/components/layout/MainLayout';
-import { mockProducts } from '@/lib/constants';
+import { useProductsByCategory } from '@/hooks/useProducts';
+import { ProductType } from '@/lib/api/products';
+import { Skeleton } from '@/components/ui/skeleton';
+import ProductCard from '@/components/products/ProductCard';
 
 const CategoryPage = () => {
   const { category } = useParams<{ category: string }>();
-  const [products, setProducts] = useState(mockProducts);
-  const [filteredProducts, setFilteredProducts] = useState(mockProducts);
+  const { data: allProducts, isLoading, error } = useProductsByCategory(category);
+  
+  const [filteredProducts, setFilteredProducts] = useState<ProductType[]>([]);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'default'>('default');
   
   // Define available sizes manually since the mock data doesn't have sizes
@@ -35,35 +37,27 @@ const CategoryPage = () => {
   const productsPerPage = 12;
 
   // Define colors from the products' colors arrays
-  const [availableColors] = useState(Array.from(new Set(mockProducts.flatMap(product => product.colors))));
+  const [availableColors] = useState(Array.from(new Set([])));
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
 
-  const [minPrice, setMinPrice] = useState(Math.min(...mockProducts.map(product => product.price)));
-  const [maxPrice, setMaxPrice] = useState(Math.max(...mockProducts.map(product => product.price)));
-  const [priceFilterRange, setPriceFilterRange] = useState([minPrice, maxPrice]);
+  const [minPrice, setMinPrice] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(100000);
+  const [priceFilterRange, setPriceFilterRange] = useState([0, 100000]);
 
   useEffect(() => {
-    if (category) {
-      const categoryProducts = mockProducts.filter(product =>
-        product.category.toLowerCase() === category.toLowerCase()
-      );
-      setProducts(categoryProducts);
-      setFilteredProducts(categoryProducts);
-      setMinPrice(Math.min(...categoryProducts.map(product => product.price)));
-      setMaxPrice(Math.max(...categoryProducts.map(product => product.price)));
-      setPriceFilterRange([Math.min(...categoryProducts.map(product => product.price)), Math.max(...categoryProducts.map(product => product.price))]);
-    } else {
-      setProducts(mockProducts);
-      setFilteredProducts(mockProducts);
-      setMinPrice(Math.min(...mockProducts.map(product => product.price)));
-      setMaxPrice(Math.max(...mockProducts.map(product => product.price)));
-      setPriceFilterRange([Math.min(...mockProducts.map(product => product.price)), Math.max(...mockProducts.map(product => product.price))]);
+    if (allProducts && allProducts.length > 0) {
+      const min = Math.min(...allProducts.map(product => product.price));
+      const max = Math.max(...allProducts.map(product => product.price));
+      setMinPrice(min);
+      setMaxPrice(max);
+      setPriceFilterRange([min, max]);
+      setFilteredProducts(allProducts);
     }
     setCurrentPage(1); // Reset to first page when category changes
-  }, [category]);
+  }, [allProducts]);
 
   // Sorting function
-  const sortProducts = useCallback((productsToSort: any[]) => {
+  const sortProducts = useCallback((productsToSort: ProductType[]) => {
     let sortedProducts = [...productsToSort];
     switch (sortOrder) {
       case 'asc':
@@ -73,14 +67,11 @@ const CategoryPage = () => {
         sortedProducts.sort((a, b) => b.price - a.price);
         break;
       default:
-        // Default sorting: reset to original order
-        sortedProducts = category ? mockProducts.filter(product =>
-          product.category.toLowerCase() === category.toLowerCase()
-        ) : mockProducts;
+        // Default sorting: keep original order
         break;
     }
     return sortedProducts;
-  }, [sortOrder, category]);
+  }, [sortOrder]);
 
   // Size filtering
   const handleSizeChange = (size: string) => {
@@ -102,8 +93,10 @@ const CategoryPage = () => {
   };
 
   useEffect(() => {
+    if (!allProducts) return;
+
     // Apply filters
-    let newFilteredProducts = [...products];
+    let newFilteredProducts = [...allProducts];
 
     // Filter by size (if we had size data in the products)
     if (selectedSizes.length > 0) {
@@ -116,9 +109,9 @@ const CategoryPage = () => {
 
     // Filter by color
     if (selectedColors.length > 0) {
-      newFilteredProducts = newFilteredProducts.filter(product =>
-        product.colors.some(color => selectedColors.includes(color))
-      );
+      // newFilteredProducts = newFilteredProducts.filter(product =>
+      //   product.colors.some(color => selectedColors.includes(color))
+      // );
     }
 
     // Filter by price
@@ -131,13 +124,17 @@ const CategoryPage = () => {
 
     setFilteredProducts(newFilteredProducts);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [selectedSizes, selectedColors, priceFilterRange, products, sortProducts]);
+  }, [selectedSizes, selectedColors, priceFilterRange, allProducts, sortProducts]);
 
   const pageCount = Math.ceil(filteredProducts.length / productsPerPage);
   const paginatedProducts = filteredProducts.slice(
     (currentPage - 1) * productsPerPage,
     currentPage * productsPerPage
   );
+
+  if (error) {
+    console.error('Error fetching products for category:', error);
+  }
 
   return (
     <MainLayout>
@@ -233,7 +230,9 @@ const CategoryPage = () => {
         {/* Product Listing Section */}
         <section className="flex-1">
           <div className="flex justify-between items-center mb-4">
-            <h1 className="text-2xl font-bold">{category ? category : 'All Products'}</h1>
+            <h1 className="text-2xl font-bold">
+              {category ? category.charAt(0).toUpperCase() + category.slice(1) : 'All Products'}
+            </h1>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="ml-auto">
@@ -260,38 +259,39 @@ const CategoryPage = () => {
 
           {/* Product Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {paginatedProducts.map(product => (
-              <Link to={`/product/${product.id}`} key={product.id} className="group">
-                <Card className="h-full flex flex-col">
-                  <CardHeader className="p-0">
-                    <AspectRatio ratio={4 / 3}>
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="object-cover rounded-md aspect-video"
-                      />
-                    </AspectRatio>
-                  </CardHeader>
-                  <CardContent className="flex flex-col p-4 space-y-2 flex-grow">
-                    <CardTitle className="text-lg font-semibold truncate group-hover:text-primary transition-colors">
-                      {product.name}
-                    </CardTitle>
-                    <CardDescription>
-                      ₹{product.price.toLocaleString('en-IN')}
-                    </CardDescription>
-                    {product.discount && (
-                      <Badge variant="secondary">
-                        {product.discount}% off
-                      </Badge>
-                    )}
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+            {isLoading ? (
+              // Loading skeletons
+              Array.from({ length: 8 }).map((_, index) => (
+                <div key={index} className="space-y-4">
+                  <Skeleton className="h-64 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              ))
+            ) : paginatedProducts.length > 0 ? (
+              paginatedProducts.map(product => (
+                <ProductCard
+                  key={product.id}
+                  id={product.id}
+                  name={product.name}
+                  price={product.price}
+                  discount={product.discount || 0}
+                  image={product.image || '/placeholder.svg'}
+                  category={product.category_name || 'Uncategorized'}
+                  inStock={(product.stock || 0) > 0}
+                  rating={product.rating ? Number(product.rating) : undefined}
+                  salesCount={product.sales_count || 0}
+                />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-8 text-muted-foreground">
+                {category ? `No products found in ${category} category` : 'No products available'}
+              </div>
+            )}
           </div>
 
           {/* Pagination */}
-          {filteredProducts.length > 0 && (
+          {filteredProducts.length > 0 && pageCount > 1 && (
             <div className="flex justify-center mt-8">
               <Pagination>
                 <PaginationContent>
@@ -304,7 +304,6 @@ const CategoryPage = () => {
                       className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
                     />
                   </PaginationItem>
-                  {/* Display up to 5 page numbers */}
                   {Array.from({ length: Math.min(5, pageCount) }, (_, i) => {
                     const pageNumber = Math.max(1, Math.min(currentPage - 2 + i, pageCount));
                     return (

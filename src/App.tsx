@@ -12,9 +12,11 @@ import AdminDashboard from "./pages/AdminDashboard";
 import CategoryPage from "./pages/CategoryPage";
 import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
+import ProductsPage from "./pages/ProductsPage";
+import NewArrivals from "./pages/NewArrivals";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./contexts/AuthContext";
-import ProductsPage from "./pages/admin/ProductsPage";
+import ProductsPageAdmin from "./pages/admin/ProductsPage";
 import OrdersPage from "./pages/admin/OrdersPage";
 import CustomersPage from "./pages/admin/CustomersPage";
 import ReviewsPage from "./pages/admin/ReviewsPage";
@@ -65,6 +67,13 @@ const AppRoutes = () => {
         </ProtectedRoute>
       } />
       
+      {/* Public product pages */}
+      <Route path="/products" element={<ProductsPage />} />
+      <Route path="/new-arrivals" element={<NewArrivals />} />
+      <Route path="/category/:category" element={<CategoryPage />} />
+      <Route path="/product/:id" element={<ProductDetail />} />
+      <Route path="/cart" element={<Cart />} />
+      
       {/* Admin Routes */}
       <Route path="/admin/dashboard" element={
         <AdminRoute>
@@ -73,7 +82,7 @@ const AppRoutes = () => {
       } />
       <Route path="/admin/products" element={
         <AdminRoute>
-          <ProductsPage />
+          <ProductsPageAdmin />
         </AdminRoute>
       } />
       <Route path="/admin/orders" element={
@@ -107,9 +116,6 @@ const AppRoutes = () => {
         </AdminRoute>
       } />
       
-      <Route path="/category/:category" element={<CategoryPage />} />
-      <Route path="/product/:id" element={<ProductDetail />} />
-      <Route path="/cart" element={<Cart />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
