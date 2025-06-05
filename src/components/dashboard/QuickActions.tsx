@@ -3,22 +3,25 @@ import React from 'react';
 import { Package, Tag, ShoppingBag, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 const QuickActions = () => {
+  const navigate = useNavigate();
+
   const handleAddProduct = () => {
-    window.location.href = '/admin/products?action=add';
+    navigate('/admin/products?action=add');
   };
 
   const handleManageCategories = () => {
-    window.location.href = '/admin/categories';
+    navigate('/admin/categories');
   };
 
   const handleProcessOrders = () => {
-    window.location.href = '/admin/orders';
+    navigate('/admin/orders');
   };
 
   const handleGenerateReport = () => {
-    alert('Report generation functionality will be implemented soon!');
+    navigate('/admin/reports');
   };
 
   return (

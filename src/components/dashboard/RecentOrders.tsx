@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 interface RecentOrdersProps {
   recentOrders: any[];
@@ -10,6 +11,8 @@ interface RecentOrdersProps {
 }
 
 const RecentOrders = ({ recentOrders, isLoading }: RecentOrdersProps) => {
+  const navigate = useNavigate();
+
   return (
     <Card>
       <CardHeader>
@@ -49,7 +52,7 @@ const RecentOrders = ({ recentOrders, isLoading }: RecentOrdersProps) => {
             variant="outline" 
             className="w-full" 
             size="sm"
-            onClick={() => window.location.href = '/admin/orders'}
+            onClick={() => navigate('/admin/orders')}
           >
             View All Orders
           </Button>

@@ -1,361 +1,317 @@
 
 import React, { useState, useEffect } from 'react';
-import { Navigate, Link } from 'react-router-dom';
-import MainLayout from '@/components/layout/MainLayout';
+import { Link, useNavigate } from 'react-router-dom';
+import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { formatCurrency, calculateDiscountPrice } from '@/lib/utils';
+import { Card, CardContent } from '@/components/ui/card';
+import MainLayout from '@/components/layout/MainLayout';
+import { formatCurrency } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, Trash2, ShoppingBag, ArrowRight, AlertCircle } from 'lucide-react';
-
-type CartItem = {
-  id: string;
-  quantity: number;
-  product: {
-    id: string;
-    name: string;
-    image: string | null;
-    price: number;
-    discount: number;
-    stock: number;
-  };
-};
+import { toast } from '@/components/ui/use-toast';
 
 export default function Cart() {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
-  
+  const navigate = useNavigate();
+  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+
   useEffect(() => {
-    if (user) {
-      fetchCart();
-    } else {
-      setLoading(false);
-    }
+    fetchCartItems();
   }, [user]);
-  
-  const fetchCart = async () => {
-    setLoading(true);
-    
+
+  const fetchCartItems = async () => {
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      // First get the user's cart
-      const { data: cartData, error: cartError } = await supabase
+      const { data: cart } = await supabase
         .from('carts')
         .select('id')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .single();
-      
-      if (cartError) {
-        if (cartError.code !== 'PGRST116') { // No rows found
-          console.error('Error fetching cart:', cartError);
-        }
-        setCartItems([]);
-        setLoading(false);
+
+      if (!cart) {
+        setIsLoading(false);
         return;
       }
-      
-      // Then get the cart items with product details
-      const { data: itemsData, error: itemsError } = await supabase
+
+      const { data: items } = await supabase
         .from('cart_items')
         .select(`
-          id, 
-          quantity,
-          product:product_id (
+          *,
+          products (
             id,
             name,
-            image,
             price,
             discount,
+            image,
             stock
           )
         `)
-        .eq('cart_id', cartData.id);
-      
-      if (itemsError) {
-        console.error('Error fetching cart items:', itemsError);
-        setCartItems([]);
-      } else {
-        setCartItems(itemsData || []);
+        .eq('cart_id', cart.id);
+
+      if (items) {
+        setCartItems(items);
+        calculateTotal(items);
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error fetching cart items:', error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const updateItemQuantity = async (itemId: string, newQuantity: number) => {
+  const calculateTotal = (items: any[]) => {
+    const totalAmount = items.reduce((sum, item) => {
+      const price = item.products?.price || 0;
+      const discount = item.products?.discount || 0;
+      const finalPrice = discount > 0 ? price * (1 - discount / 100) : price;
+      return sum + (finalPrice * item.quantity);
+    }, 0);
+    setTotal(totalAmount);
+  };
+
+  const updateQuantity = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
-    
-    setUpdating(true);
-    
+
     try {
       const { error } = await supabase
         .from('cart_items')
         .update({ quantity: newQuantity })
         .eq('id', itemId);
-      
-      if (error) {
-        console.error('Error updating cart item:', error);
-        toast({
-          title: "Update failed",
-          description: "There was a problem updating your cart",
-          variant: "destructive"
-        });
-      } else {
-        // Update local state
-        setCartItems(cartItems.map(item => 
-          item.id === itemId ? { ...item, quantity: newQuantity } : item
-        ));
-      }
+
+      if (error) throw error;
+
+      const updatedItems = cartItems.map(item =>
+        item.id === itemId ? { ...item, quantity: newQuantity } : item
+      );
+      setCartItems(updatedItems);
+      calculateTotal(updatedItems);
     } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setUpdating(false);
+      console.error('Error updating quantity:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update quantity",
+        variant: "destructive"
+      });
     }
   };
 
   const removeItem = async (itemId: string) => {
-    setUpdating(true);
-    
     try {
       const { error } = await supabase
         .from('cart_items')
         .delete()
         .eq('id', itemId);
-      
-      if (error) {
-        console.error('Error removing cart item:', error);
-        toast({
-          title: "Removal failed",
-          description: "There was a problem removing the item from your cart",
-          variant: "destructive"
-        });
-      } else {
-        // Update local state
-        setCartItems(cartItems.filter(item => item.id !== itemId));
-        toast({
-          title: "Item removed",
-          description: "Item has been removed from your cart"
-        });
-      }
+
+      if (error) throw error;
+
+      const updatedItems = cartItems.filter(item => item.id !== itemId);
+      setCartItems(updatedItems);
+      calculateTotal(updatedItems);
+
+      toast({
+        title: "Item Removed",
+        description: "Item has been removed from your cart",
+      });
     } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setUpdating(false);
+      console.error('Error removing item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove item",
+        variant: "destructive"
+      });
     }
   };
 
-  // Calculate totals
-  const subtotal = cartItems.reduce((sum, item) => {
-    const itemPrice = calculateDiscountPrice(item.product.price, item.product.discount);
-    return sum + (itemPrice * item.quantity);
-  }, 0);
-  
-  const shippingCost = subtotal > 1000 ? 0 : 100;
-  const total = subtotal + shippingCost;
+  const handleCheckout = () => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    navigate('/checkout');
+  };
 
-  // Redirect if not logged in
-  if (!user && !loading) {
-    return <Navigate to="/auth" />;
+  if (!user) {
+    return (
+      <MainLayout>
+        <div className="container py-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Please sign in to view your cart</h1>
+            <Link to="/auth">
+              <Button>Sign In</Button>
+            </Link>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="container py-8">
+          <div className="text-center">Loading your cart...</div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (cartItems.length === 0) {
+    return (
+      <MainLayout>
+        <div className="container py-8">
+          <div className="text-center">
+            <ShoppingBag size={64} className="mx-auto mb-4 text-gray-400" />
+            <h1 className="text-2xl font-bold mb-4">Your cart is empty</h1>
+            <p className="text-muted-foreground mb-6">
+              Add some beautiful items to your cart to get started
+            </p>
+            <Link to="/products">
+              <Button className="bg-usha-burgundy hover:bg-usha-burgundy/90">
+                Continue Shopping
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </MainLayout>
+    );
   }
 
   return (
     <MainLayout>
-      <div className="container py-8 md:py-12">
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-serif font-medium text-gray-800">Shopping Cart</h1>
-          <p className="text-muted-foreground mt-2">Review your items and proceed to checkout</p>
-        </div>
-
-        {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-usha-burgundy" />
-            <span className="ml-2">Loading your cart...</span>
-          </div>
-        ) : cartItems.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Cart items */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg border">
-                <div className="p-6 border-b">
-                  <h2 className="text-xl font-medium">Cart Items ({cartItems.length})</h2>
-                </div>
-                <div className="divide-y">
-                  {cartItems.map((item) => {
-                    const itemPrice = calculateDiscountPrice(item.product.price, item.product.discount);
-                    const isOutOfStock = item.product.stock < item.quantity;
-                    
-                    return (
-                      <div key={item.id} className="p-4 sm:p-6">
-                        <div className="flex flex-col sm:flex-row">
-                          {/* Product image */}
-                          <div className="sm:w-24 h-24 flex-shrink-0 bg-white border rounded mb-4 sm:mb-0 flex items-center justify-center">
-                            <img 
-                              src={item.product.image || "/placeholder.svg"}
-                              alt={item.product.name}
-                              className="max-h-20 max-w-20 object-contain"
-                            />
+      <div className="container py-8">
+        <h1 className="text-3xl font-bold mb-8">Shopping Cart</h1>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Cart Items */}
+          <div className="lg:col-span-2 space-y-4">
+            {cartItems.map((item) => {
+              const price = item.products?.price || 0;
+              const discount = item.products?.discount || 0;
+              const finalPrice = discount > 0 ? price * (1 - discount / 100) : price;
+              
+              return (
+                <Card key={item.id}>
+                  <CardContent className="p-6">
+                    <div className="flex items-start space-x-4">
+                      <img
+                        src={item.products?.image || '/placeholder.svg'}
+                        alt={item.products?.name}
+                        className="w-20 h-20 object-cover rounded-md"
+                      />
+                      
+                      <div className="flex-1">
+                        <Link
+                          to={`/product/${item.products?.id}`}
+                          className="font-medium hover:text-usha-burgundy transition-colors"
+                        >
+                          {item.products?.name}
+                        </Link>
+                        
+                        <div className="mt-2 flex items-center space-x-2">
+                          <span className="font-semibold">
+                            {formatCurrency(finalPrice)}
+                          </span>
+                          {discount > 0 && (
+                            <span className="text-sm text-muted-foreground line-through">
+                              {formatCurrency(price)}
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="mt-4 flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              disabled={item.quantity <= 1}
+                            >
+                              <Minus size={14} />
+                            </Button>
+                            
+                            <span className="w-8 text-center">{item.quantity}</span>
+                            
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              disabled={item.quantity >= (item.products?.stock || 999)}
+                            >
+                              <Plus size={14} />
+                            </Button>
                           </div>
                           
-                          {/* Product details */}
-                          <div className="sm:ml-6 flex-1">
-                            <div className="flex flex-col sm:flex-row sm:justify-between mb-4">
-                              <div>
-                                <h3 className="text-lg font-medium">
-                                  <Link 
-                                    to={`/product/${item.product.id}`}
-                                    className="hover:text-usha-burgundy"
-                                  >
-                                    {item.product.name}
-                                  </Link>
-                                </h3>
-                                <div className="flex items-center mt-1">
-                                  <span className="font-medium text-usha-burgundy">
-                                    {formatCurrency(itemPrice)}
-                                  </span>
-                                  {item.product.discount > 0 && (
-                                    <span className="ml-2 text-sm text-muted-foreground line-through">
-                                      {formatCurrency(item.product.price)}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              <div className="mt-3 sm:mt-0 text-right">
-                                <span className="font-medium">
-                                  {formatCurrency(itemPrice * item.quantity)}
-                                </span>
-                              </div>
-                            </div>
-                            
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                              <div className="flex items-center mb-3 sm:mb-0">
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => updateItemQuantity(item.id, item.quantity - 1)}
-                                  disabled={updating || item.quantity <= 1}
-                                >
-                                  -
-                                </Button>
-                                <Input
-                                  className="w-12 h-8 mx-2 text-center"
-                                  type="number"
-                                  min="1"
-                                  max={item.product.stock}
-                                  value={item.quantity}
-                                  onChange={(e) => {
-                                    const val = parseInt(e.target.value);
-                                    if (!isNaN(val) && val > 0) {
-                                      updateItemQuantity(item.id, val);
-                                    }
-                                  }}
-                                  disabled={updating}
-                                />
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => updateItemQuantity(item.id, item.quantity + 1)}
-                                  disabled={updating || item.quantity >= item.product.stock}
-                                >
-                                  +
-                                </Button>
-                              </div>
-                              
-                              <Button
-                                variant="ghost"
-                                className="h-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                onClick={() => removeItem(item.id)}
-                                disabled={updating}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Remove
-                              </Button>
-                            </div>
-                            
-                            {/* Stock warning */}
-                            {isOutOfStock && (
-                              <div className="mt-2 flex items-center text-sm text-red-600">
-                                <AlertCircle className="h-4 w-4 mr-1" />
-                                Only {item.product.stock} items available
-                              </div>
-                            )}
-                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-500 hover:text-red-700"
+                            onClick={() => removeItem(item.id)}
+                          >
+                            <Trash2 size={16} />
+                          </Button>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-            
-            {/* Order summary */}
-            <div>
-              <div className="bg-white rounded-lg border sticky top-8">
-                <div className="p-6 border-b">
-                  <h2 className="text-xl font-medium">Order Summary</h2>
-                </div>
-                <div className="p-6 space-y-4">
+                      
+                      <div className="text-right">
+                        <p className="font-semibold">
+                          {formatCurrency(finalPrice * item.quantity)}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+          
+          {/* Order Summary */}
+          <div>
+            <Card>
+              <CardContent className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
+                
+                <div className="space-y-2 mb-4">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span className="font-medium">{formatCurrency(subtotal)}</span>
+                    <span>{formatCurrency(total)}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Shipping</span>
-                    <span className="font-medium">
-                      {shippingCost === 0 ? 'Free' : formatCurrency(shippingCost)}
-                    </span>
+                    <span>Calculated at checkout</span>
                   </div>
-                  {subtotal < 1000 && (
-                    <div className="text-sm border-t pt-4">
-                      <p>Add items worth {formatCurrency(1000 - subtotal)} more for free shipping</p>
-                    </div>
-                  )}
-                  <div className="border-t pt-4 flex justify-between font-medium text-lg">
+                </div>
+                
+                <div className="border-t pt-4 mb-6">
+                  <div className="flex justify-between font-semibold text-lg">
                     <span>Total</span>
-                    <span className="text-usha-burgundy">{formatCurrency(total)}</span>
+                    <span>{formatCurrency(total)}</span>
                   </div>
-                  <Button 
-                    className="w-full bg-usha-burgundy hover:bg-usha-burgundy/90 mt-4"
-                  >
-                    Proceed to Checkout
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                </div>
+                
+                <Button 
+                  className="w-full bg-usha-burgundy hover:bg-usha-burgundy/90"
+                  onClick={handleCheckout}
+                >
+                  Proceed to Checkout
+                </Button>
+                
+                <Link to="/products" className="block mt-4">
+                  <Button variant="outline" className="w-full">
+                    Continue Shopping
                   </Button>
-                </div>
-                <div className="p-4 bg-gray-50 border-t rounded-b-lg">
-                  <div className="flex items-center justify-center text-sm text-muted-foreground">
-                    <ShoppingBag className="mr-2 h-4 w-4" />
-                    Secure checkout powered by Usha Designs
-                  </div>
-                </div>
-              </div>
-            </div>
+                </Link>
+              </CardContent>
+            </Card>
           </div>
-        ) : (
-          <div className="bg-white rounded-lg border p-6 flex flex-col items-center justify-center py-16">
-            <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center mb-6">
-              <ShoppingBag className="h-12 w-12 text-muted-foreground" />
-            </div>
-            <h2 className="text-2xl font-medium mb-2">Your cart is empty</h2>
-            <p className="text-muted-foreground mb-8 text-center max-w-md">
-              Looks like you haven't added any items to your cart yet. 
-              Explore our collection to discover exclusive designs.
-            </p>
-            <Button 
-              onClick={() => window.location.href = '/'}
-              className="bg-usha-burgundy hover:bg-usha-burgundy/90"
-            >
-              Continue Shopping
-            </Button>
-          </div>
-        )}
+        </div>
       </div>
     </MainLayout>
   );

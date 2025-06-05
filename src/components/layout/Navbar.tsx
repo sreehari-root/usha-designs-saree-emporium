@@ -1,240 +1,250 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, ShoppingBag, User, Search, LogOut } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Heart, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ushaLogo } from '@/lib/constants';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-
-const categoryLinks = [
-  { name: 'Pure Silk', path: '/category/pure-silk' },
-  { name: 'Cotton', path: '/category/cotton' },
-  { name: 'Georgette', path: '/category/georgette' },
-  { name: 'Designer', path: '/category/designer' },
-  { name: 'Ready Sets', path: '/category/ready-sets' },
-  { name: 'New Arrivals', path: '/new-arrivals' },
-];
+import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Navbar() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [cartCount, setCartCount] = useState(0); // This would be from a context in a real app
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [cartItemCount, setCartItemCount] = useState(0);
+  const [categories, setCategories] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+      
+      if (!error && data) {
+        setCategories(data);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    const fetchCartCount = async () => {
+      if (!user) {
+        setCartItemCount(0);
+        return;
+      }
+
+      try {
+        const { data: cart } = await supabase
+          .from('carts')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (cart) {
+          const { data: cartItems } = await supabase
+            .from('cart_items')
+            .select('quantity')
+            .eq('cart_id', cart.id);
+
+          const total = cartItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+          setCartItemCount(total);
+        }
+      } catch (error) {
+        console.error('Error fetching cart count:', error);
+      }
+    };
+
+    fetchCartCount();
+  }, [user]);
+
   const handleSignOut = async () => {
-    await signOut();
-    setIsMenuOpen(false);
-    navigate('/');
-    toast({
-      title: "Logged out",
-      description: "You have been signed out successfully",
-    });
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
-  const getUserInitial = () => {
-    if (user?.user_metadata?.first_name) {
-      return user.user_metadata.first_name.charAt(0).toUpperCase();
-    }
-    return user?.email?.charAt(0).toUpperCase() || "U";
-  };
+  const categoryLinks = [
+    { name: 'Sarees', path: '/category/sarees' },
+    { name: 'Lehenga', path: '/category/lehenga' },
+    { name: 'Pure Silk', path: '/category/pure-silk' },
+    { name: 'Cotton', path: '/category/cotton' },
+    { name: 'Georgette', path: '/category/georgette' },
+    { name: 'Designer', path: '/category/designer' },
+    { name: 'Ready Sets', path: '/category/ready-sets' }
+  ];
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-      <div className="container py-2">
-        {/* Mobile Menu Button */}
-        <div className="flex justify-between items-center py-2 lg:hidden">
-          <button 
-            onClick={() => setIsMenuOpen(!isMenuOpen)} 
-            className="p-2 text-usha-burgundy"
-            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-          >
-            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-          
-          {/* Logo For Mobile */}
-          <Link to="/" className="flex items-center">
-            <img src={ushaLogo} alt="Usha Designs Logo" className="h-12" />
-          </Link>
-          
-          {/* Cart For Mobile */}
-          <Link to="/cart" className="p-2 relative">
-            <ShoppingBag size={24} className="text-usha-burgundy" />
-            {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-usha-burgundy text-white w-5 h-5 rounded-full text-xs flex items-center justify-center">
-                {cartCount}
-              </span>
-            )}
-          </Link>
-        </div>
-        
-        {/* Desktop Navigation */}
-        <div className="hidden lg:flex justify-between items-center py-4">
+    <nav className="bg-white shadow-md sticky top-0 z-50">
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center py-4">
           {/* Logo */}
-          <Link to="/" className="flex items-center mr-8">
-            <img src={ushaLogo} alt="Usha Designs Logo" className="h-16" />
+          <Link to="/" className="text-2xl font-bold text-usha-burgundy">
+            Usha Silks
           </Link>
-          
-          {/* Main Navigation Links */}
-          <nav className="hidden lg:flex flex-1 items-center justify-center space-x-6">
-            {categoryLinks.map((link) => (
-              <Link
-                key={link.name}
-                to={link.path}
-                className="text-foreground hover:text-usha-burgundy text-sm font-medium transition-colors"
-              >
-                {link.name}
-              </Link>
-            ))}
-          </nav>
-          
-          {/* Right Nav Items */}
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-8">
+            <Link to="/" className="text-gray-700 hover:text-usha-burgundy transition-colors">
+              Home
+            </Link>
+            <Link to="/products" className="text-gray-700 hover:text-usha-burgundy transition-colors">
+              All Products
+            </Link>
+            <Link to="/new-arrivals" className="text-gray-700 hover:text-usha-burgundy transition-colors">
+              New Arrivals
+            </Link>
+            
+            {/* Categories Dropdown */}
+            <div className="relative group">
+              <button className="text-gray-700 hover:text-usha-burgundy transition-colors">
+                Categories
+              </button>
+              <div className="absolute top-full left-0 mt-2 w-48 bg-white shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="py-2">
+                  {categoryLinks.map((category) => (
+                    <Link
+                      key={category.name}
+                      to={category.path}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-usha-burgundy"
+                    >
+                      {category.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right side icons */}
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" className="text-foreground hover:text-usha-burgundy">
+            {/* Search */}
+            <Button variant="ghost" size="icon" className="hidden md:flex">
               <Search size={20} />
             </Button>
-            
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={user.user_metadata?.avatar_url} alt={user.user_metadata?.first_name} />
-                      <AvatarFallback className="bg-usha-rose text-white">
-                        {getUserInitial()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <Link to="/account">My Account</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/orders">My Orders</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/wishlist">Wishlist</Link>
-                  </DropdownMenuItem>
-                  {isAdmin && (
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin/dashboard">Admin Dashboard</Link>
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button variant="outline" size="sm" className="border-usha-burgundy text-usha-burgundy hover:bg-usha-burgundy hover:text-white">
-                <Link to="/auth">Login</Link>
+
+            {/* Wishlist */}
+            {user && (
+              <Button variant="ghost" size="icon">
+                <Heart size={20} />
               </Button>
             )}
-            
+
+            {/* Cart */}
             <Link to="/cart" className="relative">
-              <Button variant="ghost" size="icon" className="text-foreground hover:text-usha-burgundy">
-                <ShoppingBag size={20} />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-usha-burgundy text-white w-5 h-5 rounded-full text-xs flex items-center justify-center">
-                    {cartCount}
-                  </span>
+              <Button variant="ghost" size="icon">
+                <ShoppingCart size={20} />
+                {cartItemCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+                  >
+                    {cartItemCount}
+                  </Badge>
                 )}
               </Button>
             </Link>
-          </div>
-        </div>
-      </div>
-      
-      {/* Mobile Menu */}
-      {isMenuOpen && (
-        <div className="lg:hidden border-t animate-fade-in">
-          <div className="container py-4 space-y-4">
-            {!user ? (
-              <div className="flex space-x-4">
-                <Button asChild variant="default" className="flex-1 bg-usha-burgundy hover:bg-usha-burgundy/90">
-                  <Link to="/auth">Login</Link>
+
+            {/* User Menu */}
+            {user ? (
+              <div className="relative group">
+                <Button variant="ghost" size="icon">
+                  <User size={20} />
                 </Button>
-                <Button asChild variant="outline" className="flex-1 border-usha-burgundy text-usha-burgundy">
-                  <Link to="/auth?tab=signup">Register</Link>
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between py-2">
-                <div className="flex items-center space-x-4">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={user.user_metadata?.avatar_url} alt={user.user_metadata?.first_name} />
-                    <AvatarFallback className="bg-usha-rose text-white">
-                      {getUserInitial()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-sm font-medium">
-                      {user.user_metadata?.first_name} {user.user_metadata?.last_name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white shadow-lg rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="py-2">
+                    <Link
+                      to="/account"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      My Account
+                    </Link>
+                    {isAdmin && (
+                      <Link
+                        to="/admin/dashboard"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Admin Dashboard
+                      </Link>
+                    )}
+                    <button
+                      onClick={handleSignOut}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Sign Out
+                    </button>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" onClick={handleSignOut}>
-                  <LogOut size={20} />
+              </div>
+            ) : (
+              <Link to="/auth">
+                <Button variant="outline" size="sm">
+                  Sign In
                 </Button>
-              </div>
+              </Link>
             )}
-            
-            <div className="flex w-full rounded-md border border-input">
-              <input 
-                type="search" 
-                placeholder="Search for products..." 
-                className="flex-1 bg-transparent px-3 py-2 text-sm outline-none"
-              />
-              <Button variant="ghost" size="icon">
-                <Search size={18} />
-              </Button>
-            </div>
-            
-            <nav className="space-y-1">
-              {categoryLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  to={link.path}
-                  className="block py-2 text-foreground hover:text-usha-burgundy"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {link.name}
-                </Link>
-              ))}
-            </nav>
-            
-            {user && (
-              <div className="space-y-1 border-t pt-2">
-                <Link to="/account" className="block py-2" onClick={() => setIsMenuOpen(false)}>
-                  My Account
-                </Link>
-                <Link to="/orders" className="block py-2" onClick={() => setIsMenuOpen(false)}>
-                  My Orders
-                </Link>
-                <Link to="/wishlist" className="block py-2" onClick={() => setIsMenuOpen(false)}>
-                  Wishlist
-                </Link>
-                {isAdmin && (
-                  <Link to="/admin/dashboard" className="block py-2" onClick={() => setIsMenuOpen(false)}>
-                    Admin Dashboard
-                  </Link>
-                )}
-                <button 
-                  className="block w-full text-left py-2 text-red-600" 
-                  onClick={handleSignOut}
-                >
-                  Logout
-                </button>
-              </div>
-            )}
+
+            {/* Mobile menu button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </Button>
           </div>
         </div>
-      )}
-    </header>
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <div className="md:hidden py-4 border-t">
+            <div className="flex flex-col space-y-4">
+              <Link
+                to="/"
+                className="text-gray-700 hover:text-usha-burgundy transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Home
+              </Link>
+              <Link
+                to="/products"
+                className="text-gray-700 hover:text-usha-burgundy transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                All Products
+              </Link>
+              <Link
+                to="/new-arrivals"
+                className="text-gray-700 hover:text-usha-burgundy transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                New Arrivals
+              </Link>
+              
+              {/* Mobile Categories */}
+              <div className="border-t pt-4">
+                <p className="font-medium text-gray-900 mb-2">Categories</p>
+                {categoryLinks.map((category) => (
+                  <Link
+                    key={category.name}
+                    to={category.path}
+                    className="block py-2 pl-4 text-gray-700 hover:text-usha-burgundy transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {category.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </nav>
   );
 }

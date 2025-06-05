@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 interface PopularProductsProps {
   topProducts: any[];
@@ -10,6 +11,8 @@ interface PopularProductsProps {
 }
 
 const PopularProducts = ({ topProducts, isLoading }: PopularProductsProps) => {
+  const navigate = useNavigate();
+
   return (
     <Card>
       <CardHeader>
@@ -43,7 +46,7 @@ const PopularProducts = ({ topProducts, isLoading }: PopularProductsProps) => {
             variant="outline" 
             className="w-full" 
             size="sm"
-            onClick={() => window.location.href = '/admin/products'}
+            onClick={() => navigate('/admin/products')}
           >
             View All Products
           </Button>

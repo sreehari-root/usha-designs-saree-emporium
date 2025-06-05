@@ -12,6 +12,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import CategoryPage from "./pages/CategoryPage";
 import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
 import ProductsPage from "./pages/ProductsPage";
 import NewArrivals from "./pages/NewArrivals";
 import NotFound from "./pages/NotFound";
@@ -73,6 +74,11 @@ const AppRoutes = () => {
       <Route path="/category/:category" element={<CategoryPage />} />
       <Route path="/product/:id" element={<ProductDetail />} />
       <Route path="/cart" element={<Cart />} />
+      <Route path="/checkout" element={
+        <ProtectedRoute>
+          <Checkout />
+        </ProtectedRoute>
+      } />
       
       {/* Admin Routes */}
       <Route path="/admin/dashboard" element={
