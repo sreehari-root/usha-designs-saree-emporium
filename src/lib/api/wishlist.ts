@@ -2,79 +2,33 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
-export interface WishlistItem {
-  id: string;
-  user_id: string;
-  product_id: string;
-  created_at: string;
-  product?: {
-    id: string;
-    name: string;
-    price: number;
-    image: string | null;
-    discount: number | null;
-  };
-}
-
 export const addToWishlist = async (productId: string): Promise<boolean> => {
   try {
-    console.log('Adding to wishlist - Product ID:', productId);
-    
     const { data: { user } } = await supabase.auth.getUser();
+    
     if (!user) {
       toast({
-        title: "Authentication Required",
-        description: "Please log in to add items to wishlist.",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    // Verify product exists
-    const { data: product, error: productError } = await supabase
-      .from('products')
-      .select('id, name')
-      .eq('id', productId)
-      .single();
-
-    if (productError) {
-      console.error('Product not found:', productError);
-      toast({
-        title: "Error",
-        description: "Product not found.",
-        variant: "destructive"
-      });
-      return false;
-    }
-
-    if (!product) {
-      toast({
-        title: "Error",
-        description: "Product not found.",
+        title: "Authentication required",
+        description: "Please sign in to add items to your wishlist.",
         variant: "destructive"
       });
       return false;
     }
 
     // Check if item already exists in wishlist
-    const { data: existingItem, error: existingError } = await supabase
+    const { data: existing } = await supabase
       .from('wishlists')
       .select('id')
       .eq('user_id', user.id)
       .eq('product_id', productId)
       .single();
 
-    if (existingError && existingError.code !== 'PGRST116') {
-      console.error('Error checking existing wishlist item:', existingError);
-      throw existingError;
-    }
-
-    if (existingItem) {
+    if (existing) {
       toast({
-        title: "Already in Wishlist",
-        description: "This product is already in your wishlist.",
+        title: "Already in wishlist",
+        description: "This item is already in your wishlist.",
       });
-      return false;
+      return true;
     }
 
     const { error } = await supabase
@@ -90,8 +44,8 @@ export const addToWishlist = async (productId: string): Promise<boolean> => {
     }
 
     toast({
-      title: "Added to Wishlist",
-      description: `${product.name} has been added to your wishlist.`,
+      title: "Added to wishlist",
+      description: "Item has been added to your wishlist.",
     });
 
     return true;
@@ -99,7 +53,7 @@ export const addToWishlist = async (productId: string): Promise<boolean> => {
     console.error('Error adding to wishlist:', error);
     toast({
       title: "Error",
-      description: "Failed to add product to wishlist. Please try again.",
+      description: "Failed to add item to wishlist. Please try again.",
       variant: "destructive"
     });
     return false;
@@ -109,7 +63,15 @@ export const addToWishlist = async (productId: string): Promise<boolean> => {
 export const removeFromWishlist = async (productId: string): Promise<boolean> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return false;
+    
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to manage your wishlist.",
+        variant: "destructive"
+      });
+      return false;
+    }
 
     const { error } = await supabase
       .from('wishlists')
@@ -123,8 +85,8 @@ export const removeFromWishlist = async (productId: string): Promise<boolean> =>
     }
 
     toast({
-      title: "Removed from Wishlist",
-      description: "Product has been removed from your wishlist.",
+      title: "Removed from wishlist",
+      description: "Item has been removed from your wishlist.",
     });
 
     return true;
@@ -132,45 +94,20 @@ export const removeFromWishlist = async (productId: string): Promise<boolean> =>
     console.error('Error removing from wishlist:', error);
     toast({
       title: "Error",
-      description: "Failed to remove product from wishlist.",
+      description: "Failed to remove item from wishlist. Please try again.",
       variant: "destructive"
     });
     return false;
   }
 };
 
-export const getWishlistItems = async (): Promise<WishlistItem[]> => {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
-
-    const { data, error } = await supabase
-      .from('wishlists')
-      .select(`
-        *,
-        products(id, name, price, image, discount)
-      `)
-      .eq('user_id', user.id);
-
-    if (error) {
-      console.error('Error fetching wishlist items:', error);
-      throw error;
-    }
-
-    return data?.map(item => ({
-      ...item,
-      product: item.products
-    })) || [];
-  } catch (error) {
-    console.error('Error fetching wishlist items:', error);
-    return [];
-  }
-};
-
 export const isInWishlist = async (productId: string): Promise<boolean> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return false;
+    
+    if (!user) {
+      return false;
+    }
 
     const { data, error } = await supabase
       .from('wishlists')
@@ -180,13 +117,13 @@ export const isInWishlist = async (productId: string): Promise<boolean> => {
       .single();
 
     if (error && error.code !== 'PGRST116') {
-      console.error('Error checking wishlist:', error);
+      console.error('Error checking wishlist status:', error);
       return false;
     }
 
     return !!data;
   } catch (error) {
-    console.error('Error checking wishlist:', error);
+    console.error('Error checking wishlist status:', error);
     return false;
   }
 };

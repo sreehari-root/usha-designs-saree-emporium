@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { formatCurrency, calculateDiscountPrice, getStarRating } from '@/lib/utils';
 import { addToCart } from '@/lib/api/cart';
 import { addToWishlist, removeFromWishlist, isInWishlist } from '@/lib/api/wishlist';
+import { fetchProductImages, ProductImageType } from '@/lib/api/productImages';
+import ProductImageCarousel from './ProductImageCarousel';
 
 interface ProductCardProps {
   id: string;
@@ -34,6 +36,7 @@ export default function ProductCard({
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isInWishlistState, setIsInWishlistState] = useState(false);
   const [isWishlistLoading, setIsWishlistLoading] = useState(false);
+  const [productImages, setProductImages] = useState<string[]>([]);
 
   const finalPrice = discount ? calculateDiscountPrice(price, discount) : price;
   
@@ -44,6 +47,21 @@ export default function ProductCard({
     };
     checkWishlistStatus();
   }, [id]);
+
+  useEffect(() => {
+    const loadProductImages = async () => {
+      const images = await fetchProductImages(id);
+      const imageUrls = images.map(img => img.image_url);
+      
+      // If no images in product_images table, use the main image from products table
+      if (imageUrls.length === 0 && image) {
+        setProductImages([image]);
+      } else {
+        setProductImages(imageUrls);
+      }
+    };
+    loadProductImages();
+  }, [id, image]);
 
   const handleAddToCart = async () => {
     console.log('Add to cart clicked for product:', id);
@@ -89,12 +107,12 @@ export default function ProductCard({
   
   return (
     <div className="product-card group rounded-lg border bg-card text-card-foreground overflow-hidden">
-      <div className="relative product-image-container">
+      <div className="relative product-image-container aspect-square">
         <Link to={`/product/${id}`}>
-          <img 
-            src={image || '/placeholder.svg'} 
-            alt={name} 
-            className="w-full h-64 object-cover product-image"
+          <ProductImageCarousel 
+            images={productImages}
+            productName={name}
+            className="w-full h-full"
           />
         </Link>
         

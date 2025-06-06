@@ -4,141 +4,66 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider } from '@/contexts/AuthContext';
 import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import Account from "./pages/Account";
-import AdminDashboard from "./pages/AdminDashboard";
+import ProductsPage from "./pages/ProductsPage";
+import NewArrivals from "./pages/NewArrivals";
 import CategoryPage from "./pages/CategoryPage";
 import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
+import WishlistPage from "./pages/WishlistPage";
 import Checkout from "./pages/Checkout";
-import ProductsPage from "./pages/ProductsPage";
-import NewArrivals from "./pages/NewArrivals";
-import NotFound from "./pages/NotFound";
-import { useAuth } from "./contexts/AuthContext";
+import Auth from "./pages/Auth";
+import Login from "./pages/Login";
+import Account from "./pages/Account";
+import AdminDashboard from "./pages/AdminDashboard";
 import ProductsPageAdmin from "./pages/admin/ProductsPage";
+import CategoriesPage from "./pages/admin/CategoriesPage";
 import OrdersPage from "./pages/admin/OrdersPage";
 import CustomersPage from "./pages/admin/CustomersPage";
 import ReviewsPage from "./pages/admin/ReviewsPage";
-import CategoriesPage from "./pages/admin/CategoriesPage";
 import ReportsPage from "./pages/admin/ReportsPage";
 import SettingsPage from "./pages/admin/SettingsPage";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Protected route component for admin-only routes
-const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isAdmin, loading } = useAuth();
-  
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-  
-  if (!user || !isAdmin) {
-    return <Navigate to="/" />;
-  }
-  
-  return <>{children}</>;
-};
-
-// Protected route component for authenticated users
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-  
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-  
-  if (!user) {
-    return <Navigate to="/auth" />;
-  }
-  
-  return <>{children}</>;
-};
-
-const AppRoutes = () => {
-  return (
-    <Routes>
-      <Route path="/" element={<Index />} />
-      <Route path="/auth" element={<Auth />} />
-      <Route path="/account" element={
-        <ProtectedRoute>
-          <Account />
-        </ProtectedRoute>
-      } />
-      
-      {/* Public product pages */}
-      <Route path="/products" element={<ProductsPage />} />
-      <Route path="/new-arrivals" element={<NewArrivals />} />
-      <Route path="/category/:category" element={<CategoryPage />} />
-      <Route path="/product/:id" element={<ProductDetail />} />
-      <Route path="/cart" element={<Cart />} />
-      <Route path="/checkout" element={
-        <ProtectedRoute>
-          <Checkout />
-        </ProtectedRoute>
-      } />
-      
-      {/* Admin Routes */}
-      <Route path="/admin/dashboard" element={
-        <AdminRoute>
-          <AdminDashboard />
-        </AdminRoute>
-      } />
-      <Route path="/admin/products" element={
-        <AdminRoute>
-          <ProductsPageAdmin />
-        </AdminRoute>
-      } />
-      <Route path="/admin/orders" element={
-        <AdminRoute>
-          <OrdersPage />
-        </AdminRoute>
-      } />
-      <Route path="/admin/customers" element={
-        <AdminRoute>
-          <CustomersPage />
-        </AdminRoute>
-      } />
-      <Route path="/admin/reviews" element={
-        <AdminRoute>
-          <ReviewsPage />
-        </AdminRoute>
-      } />
-      <Route path="/admin/categories" element={
-        <AdminRoute>
-          <CategoriesPage />
-        </AdminRoute>
-      } />
-      <Route path="/admin/reports" element={
-        <AdminRoute>
-          <ReportsPage />
-        </AdminRoute>
-      } />
-      <Route path="/admin/settings" element={
-        <AdminRoute>
-          <SettingsPage />
-        </AdminRoute>
-      } />
-      
-      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-      <Route path="*" element={<NotFound />} />
-    </Routes>
-  );
-};
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <AppRoutes />
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/products" element={<ProductsPage />} />
+            <Route path="/new-arrivals" element={<NewArrivals />} />
+            <Route path="/category/:categoryName" element={<CategoryPage />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/wishlist" element={<WishlistPage />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/account" element={<Account />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/products" element={<ProductsPageAdmin />} />
+            <Route path="/admin/categories" element={<CategoriesPage />} />
+            <Route path="/admin/orders" element={<OrdersPage />} />
+            <Route path="/admin/customers" element={<CustomersPage />} />
+            <Route path="/admin/reviews" element={<ReviewsPage />} />
+            <Route path="/admin/reports" element={<ReportsPage />} />
+            <Route path="/admin/settings" element={<SettingsPage />} />
+            
+            <Route path="*" element={<NotFound />} />
+          </Routes>
         </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
