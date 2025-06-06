@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 export interface Review {
   id: string;
@@ -9,6 +9,7 @@ export interface Review {
   rating: number;
   comment: string | null;
   created_at: string;
+  status: 'pending' | 'approved' | 'rejected';
   products?: {
     name: string;
     image: string | null;
@@ -39,6 +40,7 @@ export const fetchReviews = async (): Promise<Review[]> => {
       // Map profile data to reviews
       return reviews.map(review => ({
         ...review,
+        status: review.status || 'pending', // Default status if not set
         customer_name: profiles?.find(p => p.id === review.user_id) 
           ? `${profiles.find(p => p.id === review.user_id)?.first_name} ${profiles.find(p => p.id === review.user_id)?.last_name}`.trim()
           : 'Anonymous User'
@@ -49,6 +51,74 @@ export const fetchReviews = async (): Promise<Review[]> => {
   } catch (error) {
     console.error('Error fetching reviews:', error);
     return [];
+  }
+};
+
+export const fetchApprovedReviews = async (productId?: string): Promise<Review[]> => {
+  try {
+    let query = supabase
+      .from('reviews')
+      .select(`
+        *,
+        products(name, image)
+      `)
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false });
+
+    if (productId) {
+      query = query.eq('product_id', productId);
+    }
+
+    const { data: reviews, error } = await query;
+
+    if (error) throw error;
+
+    // Get user profiles separately
+    if (reviews && reviews.length > 0) {
+      const userIds = [...new Set(reviews.map(review => review.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', userIds);
+
+      return reviews.map(review => ({
+        ...review,
+        customer_name: profiles?.find(p => p.id === review.user_id) 
+          ? `${profiles.find(p => p.id === review.user_id)?.first_name} ${profiles.find(p => p.id === review.user_id)?.last_name}`.trim()
+          : 'Anonymous User'
+      }));
+    }
+
+    return reviews || [];
+  } catch (error) {
+    console.error('Error fetching approved reviews:', error);
+    return [];
+  }
+};
+
+export const updateReviewStatus = async (reviewId: string, status: 'approved' | 'rejected'): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('reviews')
+      .update({ status })
+      .eq('id', reviewId);
+
+    if (error) throw error;
+
+    toast({
+      title: "Review Updated",
+      description: `Review has been ${status}.`,
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error updating review status:', error);
+    toast({
+      title: "Error",
+      description: "Failed to update review status.",
+      variant: "destructive"
+    });
+    return false;
   }
 };
 
@@ -78,7 +148,7 @@ export const deleteReview = async (reviewId: string): Promise<boolean> => {
   }
 };
 
-export const addReview = async (productId: string, rating: number, comment: string): Promise<boolean> => {
+export const addReview = async (productId: string, rating: number, comment: string, orderId: string): Promise<boolean> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -96,14 +166,15 @@ export const addReview = async (productId: string, rating: number, comment: stri
         user_id: user.id,
         product_id: productId,
         rating,
-        comment
+        comment,
+        status: 'pending' // Reviews start as pending for admin approval
       });
 
     if (error) throw error;
 
     toast({
-      title: "Review Added",
-      description: "Your review has been added successfully.",
+      title: "Review Submitted",
+      description: "Your review has been submitted for approval.",
     });
 
     return true;
@@ -114,6 +185,45 @@ export const addReview = async (productId: string, rating: number, comment: stri
       description: "Failed to add review.",
       variant: "destructive"
     });
+    return false;
+  }
+};
+
+export const checkCanReview = async (productId: string, orderId: string): Promise<boolean> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    // Check if order exists, is completed, and belongs to user
+    const { data: order } = await supabase
+      .from('orders')
+      .select(`
+        id,
+        status,
+        order_items(product_id)
+      `)
+      .eq('id', orderId)
+      .eq('user_id', user.id)
+      .eq('status', 'completed')
+      .single();
+
+    if (!order) return false;
+
+    // Check if the product is in this order
+    const hasProduct = order.order_items?.some(item => item.product_id === productId);
+    if (!hasProduct) return false;
+
+    // Check if user has already reviewed this product
+    const { data: existingReview } = await supabase
+      .from('reviews')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('product_id', productId)
+      .single();
+
+    return !existingReview; // Can review if no existing review
+  } catch (error) {
+    console.error('Error checking review eligibility:', error);
     return false;
   }
 };

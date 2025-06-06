@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 export interface CustomerType {
   id: string;
@@ -18,7 +18,7 @@ export interface CustomerType {
 
 export const fetchCustomers = async (): Promise<CustomerType[]> => {
   try {
-    // First get all profiles
+    // Get all profiles with order stats
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('*');
@@ -31,9 +31,6 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       return [];
     }
 
-    // Get auth users data for email (requires admin privileges)
-    // In a real app with proper admin rights, you would join this information
-    
     // Get orders information for each user
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
@@ -77,7 +74,7 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       
       return {
         ...profile,
-        email: '', // In a real app with proper admin rights, you would get this from auth.users
+        email: 'customer@example.com', // Placeholder since we can't access auth.users directly
         orders_count: stats.orders_count,
         total_spent: stats.total_spent,
         last_order_date: stats.last_order_date
