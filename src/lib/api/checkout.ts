@@ -32,12 +32,12 @@ export const processCheckout = async (checkoutData: CheckoutData): Promise<boole
       return false;
     }
 
-    // Create the order
+    // Create the order with proper total (in rupees, not cents)
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
         user_id: user.id,
-        total: Math.round(checkoutData.total * 100), // Convert to cents
+        total: checkoutData.total, // Keep as rupees for display
         shipping_address: checkoutData.shippingAddress,
         status: 'pending'
       })
@@ -49,12 +49,12 @@ export const processCheckout = async (checkoutData: CheckoutData): Promise<boole
       throw orderError;
     }
 
-    // Create order items
+    // Create order items with proper prices
     const orderItems = checkoutData.cartItems.map(item => ({
       order_id: order.id,
       product_id: item.product_id,
       quantity: item.quantity,
-      price: Math.round(item.price * 100) // Convert to cents
+      price: item.products?.price || 0 // Store actual price in rupees
     }));
 
     const { error: itemsError } = await supabase

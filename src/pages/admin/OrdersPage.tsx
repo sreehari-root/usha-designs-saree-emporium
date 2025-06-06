@@ -194,11 +194,16 @@ const OrdersPage = () => {
                   ) : (
                     currentOrders.map((order) => (
                       <TableRow key={order.id}>
-                        <TableCell className="font-medium">{order.id}</TableCell>
+                        <TableCell className="font-medium">{order.id.slice(0, 8)}</TableCell>
                         <TableCell>
                           <div>
                             <p>{order.customer_name || 'Unknown Customer'}</p>
-                            <p className="text-sm text-muted-foreground">{order.customer_email || 'No email'}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {order.shipping_address?.firstName && order.shipping_address?.lastName 
+                                ? `${order.shipping_address.firstName} ${order.shipping_address.lastName}`
+                                : 'Customer details'
+                              }
+                            </p>
                           </div>
                         </TableCell>
                         <TableCell>{format(new Date(order.created_at), 'PP')}</TableCell>
@@ -308,7 +313,7 @@ const OrdersPage = () => {
       <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Order Details - {selectedOrder?.id}</DialogTitle>
+            <DialogTitle>Order Details - #{selectedOrder?.id.slice(0, 8)}</DialogTitle>
           </DialogHeader>
           
           {selectedOrder && (
@@ -317,7 +322,12 @@ const OrdersPage = () => {
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground">Customer</h3>
                   <p className="font-medium">{selectedOrder.customer_name || 'Unknown Customer'}</p>
-                  <p className="text-sm">{selectedOrder.customer_email || 'No email'}</p>
+                  <p className="text-sm">
+                    {selectedOrder.shipping_address?.firstName && selectedOrder.shipping_address?.lastName 
+                      ? `${selectedOrder.shipping_address.firstName} ${selectedOrder.shipping_address.lastName}`
+                      : 'Customer details not available'
+                    }
+                  </p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground">Order Date</h3>
@@ -334,15 +344,10 @@ const OrdersPage = () => {
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">Shipping Address</h3>
                   <div className="text-sm">
-                    {typeof selectedOrder.shipping_address === 'object' ? (
-                      <div>
-                        <p>{(selectedOrder.shipping_address as any).line1}</p>
-                        {(selectedOrder.shipping_address as any).line2 && <p>{(selectedOrder.shipping_address as any).line2}</p>}
-                        <p>{(selectedOrder.shipping_address as any).city}, {(selectedOrder.shipping_address as any).state} {(selectedOrder.shipping_address as any).postal_code}</p>
-                      </div>
-                    ) : (
-                      <p>{selectedOrder.shipping_address}</p>
-                    )}
+                    <p>{selectedOrder.shipping_address.firstName} {selectedOrder.shipping_address.lastName}</p>
+                    <p>{selectedOrder.shipping_address.address}</p>
+                    <p>{selectedOrder.shipping_address.city}, {selectedOrder.shipping_address.state} {selectedOrder.shipping_address.zipCode}</p>
+                    <p>Phone: {selectedOrder.shipping_address.phone}</p>
                   </div>
                 </div>
               )}

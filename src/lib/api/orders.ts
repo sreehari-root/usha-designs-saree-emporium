@@ -40,27 +40,21 @@ export const fetchOrders = async (): Promise<Order[]> => {
         order_items(
           *,
           products(name, image)
-        )
+        ),
+        profiles!inner(first_name, last_name)
       `)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
-    // Get user profiles separately to avoid join issues
+    // Get user emails from auth.users via profiles
     if (orders && orders.length > 0) {
-      const userIds = [...new Set(orders.map(order => order.user_id))];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name')
-        .in('id', userIds);
-
-      // Map profile data to orders
       return orders.map(order => ({
         ...order,
-        customer_name: profiles?.find(p => p.id === order.user_id) 
-          ? `${profiles.find(p => p.id === order.user_id)?.first_name} ${profiles.find(p => p.id === order.user_id)?.last_name}`.trim()
+        customer_name: order.profiles 
+          ? `${order.profiles.first_name || ''} ${order.profiles.last_name || ''}`.trim() || 'Unknown Customer'
           : 'Unknown Customer',
-        customer_email: 'email@example.com' // You might want to get this from auth.users if needed
+        customer_email: 'Available in user profile' // We can't directly access auth.users email
       }));
     }
 

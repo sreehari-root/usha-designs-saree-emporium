@@ -31,19 +31,20 @@ const RecentOrders = ({ recentOrders, isLoading }: RecentOrdersProps) => {
             ) : recentOrders.length === 0 ? (
               <p className="text-center py-4 text-sm text-muted-foreground">No orders yet</p>
             ) : (
-              recentOrders.map((order) => (
+              recentOrders.slice(0, 5).map((order) => (
                 <div key={order.id} className="grid grid-cols-3 text-sm py-2 border-b">
-                  <div>{order.id.slice(0, 8)}</div>
+                  <div>#{order.id.slice(0, 8)}</div>
                   <div>
                     <span className={`px-2 py-0.5 rounded-full text-xs ${
                       order.status === 'completed' ? 'bg-green-100 text-green-700' :
                       order.status === 'processing' ? 'bg-blue-100 text-blue-700' :
+                      order.status === 'shipped' ? 'bg-purple-100 text-purple-700' :
                       'bg-amber-100 text-amber-700'
                     }`}>
                       {order.status}
                     </span>
                   </div>
-                  <div className="text-right">{formatCurrency(order.total)}</div>
+                  <div className="text-right">₹{order.total.toLocaleString('en-IN')}</div>
                 </div>
               ))
             )}
