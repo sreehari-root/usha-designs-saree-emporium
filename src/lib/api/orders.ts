@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
@@ -30,6 +31,16 @@ export interface OrderItem {
 
 export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'completed' | 'cancelled';
 
+interface ShippingAddress {
+  firstName?: string;
+  lastName?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  phone?: string;
+}
+
 export const fetchOrders = async (): Promise<Order[]> => {
   try {
     const { data: orders, error } = await supabase
@@ -47,13 +58,19 @@ export const fetchOrders = async (): Promise<Order[]> => {
 
     // Transform orders to include customer names from shipping address
     if (orders && orders.length > 0) {
-      return orders.map(order => ({
-        ...order,
-        customer_name: order.shipping_address 
-          ? `${order.shipping_address.firstName || ''} ${order.shipping_address.lastName || ''}`.trim() || 'Unknown Customer'
-          : 'Unknown Customer',
-        customer_email: 'Available in shipping info' // We don't store email separately in orders
-      }));
+      return orders.map(order => {
+        // Type guard to check if shipping_address is an object
+        const shippingAddr = order.shipping_address as ShippingAddress | null;
+        const customerName = shippingAddr && typeof shippingAddr === 'object' && shippingAddr.firstName && shippingAddr.lastName
+          ? `${shippingAddr.firstName} ${shippingAddr.lastName}`.trim()
+          : 'Unknown Customer';
+
+        return {
+          ...order,
+          customer_name: customerName,
+          customer_email: 'Available in shipping info' // We don't store email separately in orders
+        };
+      });
     }
 
     return orders || [];
