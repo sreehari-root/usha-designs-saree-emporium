@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
@@ -40,21 +39,20 @@ export const fetchOrders = async (): Promise<Order[]> => {
         order_items(
           *,
           products(name, image)
-        ),
-        profiles!inner(first_name, last_name)
+        )
       `)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
-    // Get user emails from auth.users via profiles
+    // Transform orders to include customer names from shipping address
     if (orders && orders.length > 0) {
       return orders.map(order => ({
         ...order,
-        customer_name: order.profiles 
-          ? `${order.profiles.first_name || ''} ${order.profiles.last_name || ''}`.trim() || 'Unknown Customer'
+        customer_name: order.shipping_address 
+          ? `${order.shipping_address.firstName || ''} ${order.shipping_address.lastName || ''}`.trim() || 'Unknown Customer'
           : 'Unknown Customer',
-        customer_email: 'Available in user profile' // We can't directly access auth.users email
+        customer_email: 'Available in shipping info' // We don't store email separately in orders
       }));
     }
 
