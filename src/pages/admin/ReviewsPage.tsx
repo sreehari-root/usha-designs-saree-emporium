@@ -30,14 +30,14 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import AdminLayout from '@/components/layout/AdminLayout';
-import { fetchReviews, deleteReview, type Review } from '@/lib/api/reviews';
+import { fetchReviews, deleteReview, updateReviewStatus, type Review } from '@/lib/api/reviews';
 
 const ReviewsPage = () => {
   const { toast } = useToast();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'published' | 'rejected'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -61,7 +61,7 @@ const ReviewsPage = () => {
       (review.customer_name && review.customer_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (review.comment && review.comment.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesStatus = statusFilter === 'all' || statusFilter === 'published'; // Since we don't have status field, show all as published
+    const matchesStatus = statusFilter === 'all' || review.status === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
@@ -80,20 +80,34 @@ const ReviewsPage = () => {
   const handleDeleteReview = async (reviewId: string) => {
     const success = await deleteReview(reviewId);
     if (success) {
-      await loadReviews(); // Reload reviews to get updated data
+      await loadReviews();
     }
   };
 
-  const getStatusBadge = (status: string = 'published') => {
+  const handleApproveReview = async (reviewId: string) => {
+    const success = await updateReviewStatus(reviewId, 'approved');
+    if (success) {
+      await loadReviews();
+    }
+  };
+
+  const handleRejectReview = async (reviewId: string) => {
+    const success = await updateReviewStatus(reviewId, 'rejected');
+    if (success) {
+      await loadReviews();
+    }
+  };
+
+  const getStatusBadge = (status: 'pending' | 'approved' | 'rejected') => {
     switch (status) {
       case 'pending':
         return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 hover:bg-yellow-50">Pending</Badge>;
-      case 'published':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50">Published</Badge>;
+      case 'approved':
+        return <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50">Approved</Badge>;
       case 'rejected':
         return <Badge variant="outline" className="bg-red-50 text-red-700 hover:bg-red-50">Rejected</Badge>;
       default:
-        return <Badge variant="outline">Published</Badge>;
+        return <Badge variant="outline">Unknown</Badge>;
     }
   };
 
@@ -158,8 +172,14 @@ const ReviewsPage = () => {
                     All Reviews
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setStatusFilter('published')}>
-                    Published
+                  <DropdownMenuItem onClick={() => setStatusFilter('pending')}>
+                    Pending
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setStatusFilter('approved')}>
+                    Approved
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setStatusFilter('rejected')}>
+                    Rejected
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -207,7 +227,7 @@ const ReviewsPage = () => {
                           <p className="truncate">{review.comment || 'No comment'}</p>
                         </TableCell>
                         <TableCell>{format(new Date(review.created_at), 'MMM dd, yyyy')}</TableCell>
-                        <TableCell>{getStatusBadge('published')}</TableCell>
+                        <TableCell>{getStatusBadge(review.status)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end space-x-2">
                             <Button
@@ -218,6 +238,29 @@ const ReviewsPage = () => {
                               <Eye className="h-4 w-4" />
                               <span className="sr-only">View</span>
                             </Button>
+                            
+                            {review.status === 'pending' && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-green-600"
+                                  onClick={() => handleApproveReview(review.id)}
+                                >
+                                  <Check className="h-4 w-4" />
+                                  <span className="sr-only">Approve</span>
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-600"
+                                  onClick={() => handleRejectReview(review.id)}
+                                >
+                                  <X className="h-4 w-4" />
+                                  <span className="sr-only">Reject</span>
+                                </Button>
+                              </>
+                            )}
                             
                             <Button
                               variant="ghost"
@@ -310,7 +353,7 @@ const ReviewsPage = () => {
                   </div>
                   <div className="flex justify-between">
                     <p className="font-medium">Status:</p>
-                    <p>{getStatusBadge('published')}</p>
+                    <p>{getStatusBadge(selectedReview.status)}</p>
                   </div>
                   <div className="flex justify-between">
                     <p className="font-medium">Rating:</p>
@@ -327,6 +370,32 @@ const ReviewsPage = () => {
               </div>
               
               <div className="flex justify-end space-x-2 pt-4 border-t">
+                {selectedReview.status === 'pending' && (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="text-green-600"
+                      onClick={() => {
+                        handleApproveReview(selectedReview.id);
+                        setIsViewModalOpen(false);
+                      }}
+                    >
+                      <Check className="h-4 w-4 mr-2" />
+                      Approve
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="text-red-600"
+                      onClick={() => {
+                        handleRejectReview(selectedReview.id);
+                        setIsViewModalOpen(false);
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Reject
+                    </Button>
+                  </>
+                )}
                 <Button onClick={() => setIsViewModalOpen(false)}>
                   Close
                 </Button>
