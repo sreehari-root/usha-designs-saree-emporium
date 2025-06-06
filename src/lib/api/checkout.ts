@@ -32,6 +32,9 @@ export const processCheckout = async (checkoutData: CheckoutData): Promise<boole
       return false;
     }
 
+    // Set payment intent based on payment method
+    const paymentIntent = checkoutData.paymentMethod === 'cod' ? 'cash_on_delivery' : null;
+
     // Create the order with proper total (in rupees, not cents)
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -39,6 +42,7 @@ export const processCheckout = async (checkoutData: CheckoutData): Promise<boole
         user_id: user.id,
         total: checkoutData.total, // Keep as rupees for display
         shipping_address: checkoutData.shippingAddress,
+        payment_intent: paymentIntent,
         status: 'pending'
       })
       .select()

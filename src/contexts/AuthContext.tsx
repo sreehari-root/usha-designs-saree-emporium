@@ -26,14 +26,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          // Update profile with metadata if it exists
+          await updateProfileFromMetadata(session.user);
+          // Check admin role after a brief delay to ensure profile is created
           setTimeout(() => {
             checkUserRole(session.user.id);
-          }, 0);
+          }, 100);
         } else {
           setIsAdmin(false);
         }
@@ -46,6 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       
       if (session?.user) {
+        updateProfileFromMetadata(session.user);
         checkUserRole(session.user.id);
       }
       setLoading(false);
@@ -55,6 +60,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       subscription.unsubscribe();
     };
   }, []);
+
+  const updateProfileFromMetadata = async (user: User) => {
+    if (user.user_metadata?.first_name || user.user_metadata?.last_name) {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            first_name: user.user_metadata.first_name || '',
+            last_name: user.user_metadata.last_name || ''
+          });
+        
+        if (error) {
+          console.error('Error updating profile:', error);
+        }
+      } catch (error) {
+        console.error('Error updating profile:', error);
+      }
+    }
+  };
 
   const checkUserRole = async (userId: string) => {
     try {
@@ -76,6 +101,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
+      const redirectUrl = `${window.location.origin}/`;
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -83,7 +110,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data: { 
             first_name: firstName,
             last_name: lastName
-          }
+          },
+          emailRedirectTo: redirectUrl
         }
       });
 

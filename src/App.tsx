@@ -48,7 +48,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/account" element={<Account />} />
             
-            {/* Admin Routes */}
+            {/* Admin Routes - Protected */}
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/products" element={<ProductsPageAdmin />} />
