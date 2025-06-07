@@ -1,128 +1,21 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, ShoppingCart, Heart, User, Menu, ChevronDown } from 'lucide-react';
+import { Search, ShoppingCart, User, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from '@/components/ui/navigation-menu';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { cn } from '@/lib/utils';
-
-interface Category {
-  id: string;
-  name: string;
-}
 
 const Navbar = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [cartCount, setCartCount] = useState(0);
-  const [wishlistCount, setWishlistCount] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    fetchCategories();
-    if (user) {
-      fetchCartCount();
-      fetchWishlistCount();
-      checkAdminStatus();
-    }
-  }, [user]);
-
-  const fetchCategories = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name');
-      
-      if (error) {
-        console.error('Error fetching categories:', error);
-      } else {
-        setCategories(data || []);
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    }
-  };
-
-  const checkAdminStatus = async () => {
-    if (user) {
-      const { data } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .single();
-      
-      setIsAdmin(!!data);
-    }
-  };
-
-  const fetchCartCount = async () => {
-    if (!user) return;
-    
-    try {
-      const { data: cart } = await supabase
-        .from('carts')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (cart) {
-        const { data: items } = await supabase
-          .from('cart_items')
-          .select('quantity')
-          .eq('cart_id', cart.id);
-
-        const total = items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-        setCartCount(total);
-      }
-    } catch (error) {
-      console.error('Error fetching cart count:', error);
-    }
-  };
-
-  const fetchWishlistCount = async () => {
-    if (!user) return;
-    
-    try {
-      const { data } = await supabase
-        .from('wishlists')
-        .select('id')
-        .eq('user_id', user.id);
-
-      setWishlistCount(data?.length || 0);
-    } catch (error) {
-      console.error('Error fetching wishlist count:', error);
-    }
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -130,185 +23,152 @@ const Navbar = () => {
   };
 
   return (
-    <header className="border-b bg-background sticky top-0 z-50">
+    <nav className="bg-white shadow-md border-b">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-usha-burgundy rounded-md flex items-center justify-center">
-              <span className="text-white font-bold text-sm">UD</span>
-            </div>
-            <span className="font-bold text-xl text-usha-burgundy">Usha Designs</span>
+          <Link to="/" className="text-2xl font-bold text-primary">
+            Usha Silks
           </Link>
 
           {/* Desktop Navigation */}
-          <NavigationMenu className="hidden md:flex">
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <Link to="/" className="px-4 py-2 hover:text-usha-burgundy transition-colors">
-                  Home
-                </Link>
-              </NavigationMenuItem>
-              
-              <NavigationMenuItem>
-                <NavigationMenuTrigger>Categories</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="grid gap-3 p-6 w-[400px]">
-                    <div className="grid grid-cols-1 gap-1">
-                      {categories.map((category) => (
-                        <NavigationMenuLink key={category.id} asChild>
-                          <Link
-                            to={`/shop?category=${category.id}`}
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                          >
-                            <div className="text-sm font-medium leading-none">{category.name}</div>
-                          </Link>
-                        </NavigationMenuLink>
-                      ))}
-                    </div>
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-
-              <NavigationMenuItem>
-                <Link to="/shop" className="px-4 py-2 hover:text-usha-burgundy transition-colors">
-                  Shop All
-                </Link>
-              </NavigationMenuItem>
-
-              <NavigationMenuItem>
-                <Link to="/new-arrivals" className="px-4 py-2 hover:text-usha-burgundy transition-colors">
-                  New Arrivals
-                </Link>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
+          <div className="hidden md:flex items-center space-x-8">
+            <Link to="/" className="text-gray-700 hover:text-primary transition-colors">
+              Home
+            </Link>
+            <Link to="/shop" className="text-gray-700 hover:text-primary transition-colors">
+              Shop
+            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-gray-700 hover:text-primary">
+                  Categories
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem asChild>
+                  <Link to="/shop?category=silk-sarees">Silk Sarees</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/shop?category=cotton-sarees">Cotton Sarees</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/shop?category=wedding-collection">Wedding Collection</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/shop?category=lehengas">Lehengas</Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Link to="/about" className="text-gray-700 hover:text-primary transition-colors">
+              About
+            </Link>
+            <Link to="/contact" className="text-gray-700 hover:text-primary transition-colors">
+              Contact
+            </Link>
+          </div>
 
           {/* Search Bar */}
-          <form onSubmit={handleSearch} className="hidden md:flex items-center space-x-2 flex-1 max-w-md mx-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <div className="hidden md:flex items-center space-x-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 type="search"
                 placeholder="Search products..."
-                className="pl-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 w-64"
               />
             </div>
-          </form>
+          </div>
 
-          {/* Right Side Actions */}
+          {/* Right Side Icons */}
           <div className="flex items-center space-x-4">
-            {/* Wishlist */}
-            <Link to="/wishlist">
-              <Button variant="ghost" size="icon" className="relative">
-                <Heart className="h-5 w-5" />
-                {wishlistCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
-                    {wishlistCount}
-                  </Badge>
-                )}
-              </Button>
-            </Link>
-
-            {/* Cart */}
-            <Link to="/cart">
-              <Button variant="ghost" size="icon" className="relative">
-                <ShoppingCart className="h-5 w-5" />
-                {cartCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
-                    {cartCount}
-                  </Badge>
-                )}
-              </Button>
-            </Link>
-
-            {/* User Menu */}
+            <Button variant="ghost" size="sm">
+              <ShoppingCart className="h-5 w-5" />
+            </Button>
+            
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center space-x-2">
+                  <Button variant="ghost" size="sm">
                     <User className="h-5 w-5" />
-                    <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end">
                   <DropdownMenuItem asChild>
-                    <Link to="/account">My Account</Link>
+                    <Link to="/profile">Profile</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link to="/account?tab=orders">My Orders</Link>
+                    <Link to="/orders">My Orders</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link to="/wishlist">My Wishlist</Link>
+                    <Link to="/admin">Admin Dashboard</Link>
                   </DropdownMenuItem>
-                  {isAdmin && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin">Admin Dashboard</Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
                     Sign Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button asChild>
-                <Link to="/auth">Sign In</Link>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <User className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link to="/login">Sign In</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/register">Sign Up</Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
 
-            {/* Mobile Menu */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent>
-                <div className="flex flex-col space-y-4 mt-4">
-                  <Link to="/" className="text-lg font-medium">Home</Link>
-                  <Link to="/shop" className="text-lg font-medium">Shop All</Link>
-                  <Link to="/new-arrivals" className="text-lg font-medium">New Arrivals</Link>
-                  
-                  <div className="pt-4 border-t">
-                    <p className="text-sm font-medium text-muted-foreground mb-2">Categories</p>
-                    {categories.map((category) => (
-                      <Link
-                        key={category.id}
-                        to={`/shop?category=${category.id}`}
-                        className="block py-2 text-sm hover:text-usha-burgundy"
-                      >
-                        {category.name}
-                      </Link>
-                    ))}
-                  </div>
-
-                  {/* Mobile Search */}
-                  <form onSubmit={handleSearch} className="pt-4 border-t">
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        type="search"
-                        placeholder="Search products..."
-                        className="pl-8"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                      />
-                    </div>
-                  </form>
-                </div>
-              </SheetContent>
-            </Sheet>
+            {/* Mobile Menu Button */}
+            <button
+              className="md:hidden"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <div className="md:hidden py-4 border-t">
+            <div className="flex flex-col space-y-2">
+              <Link to="/" className="py-2 text-gray-700 hover:text-primary">
+                Home
+              </Link>
+              <Link to="/shop" className="py-2 text-gray-700 hover:text-primary">
+                Shop
+              </Link>
+              <Link to="/shop?category=silk-sarees" className="py-2 text-gray-700 hover:text-primary">
+                Silk Sarees
+              </Link>
+              <Link to="/shop?category=cotton-sarees" className="py-2 text-gray-700 hover:text-primary">
+                Cotton Sarees
+              </Link>
+              <Link to="/shop?category=wedding-collection" className="py-2 text-gray-700 hover:text-primary">
+                Wedding Collection
+              </Link>
+              <Link to="/shop?category=lehengas" className="py-2 text-gray-700 hover:text-primary">
+                Lehengas
+              </Link>
+              <Link to="/about" className="py-2 text-gray-700 hover:text-primary">
+                About
+              </Link>
+              <Link to="/contact" className="py-2 text-gray-700 hover:text-primary">
+                Contact
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
-    </header>
+    </nav>
   );
 };
 

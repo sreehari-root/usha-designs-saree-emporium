@@ -41,17 +41,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
     name: name || '',
     price: price || 0,
     discount: discount || 0,
-    image: image || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop',
+    image: image || '/placeholder.svg',
     category_name: category || 'Uncategorized',
     stock: inStock ? 10 : 0,
     rating: rating || 0,
     sales_count: salesCount || 0,
     featured: false,
     bestseller: false,
-    description: '',
-    category_id: '',
-    created_at: '',
-    updated_at: ''
+    description: ''
   };
 
   // Safety check
@@ -67,11 +64,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
     }).format(price);
   };
 
-  const discountValue = productData.discount || 0;
-  const originalPrice = productData.price || 0;
-  const discountedPrice = discountValue > 0 
-    ? originalPrice - (originalPrice * discountValue / 100)
-    : originalPrice;
+  const discountedPrice = productData.discount 
+    ? productData.price - (productData.price * productData.discount / 100)
+    : productData.price;
 
   if (viewMode === 'list') {
     return (
@@ -79,17 +74,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
         <div className="flex">
           <div className="w-48 h-48 relative overflow-hidden">
             <img
-              src={productData.image || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop'}
+              src={productData.image || '/placeholder.svg'}
               alt={productData.name}
               className="w-full h-full object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop';
-              }}
             />
-            {discountValue > 0 && (
+            {productData.discount && productData.discount > 0 && (
               <Badge className="absolute top-2 left-2 bg-red-500">
-                {discountValue}% OFF
+                {productData.discount}% OFF
               </Badge>
             )}
           </div>
@@ -131,9 +122,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   <span className="text-lg font-bold text-primary">
                     {formatPrice(discountedPrice)}
                   </span>
-                  {discountValue > 0 && (
+                  {productData.discount && productData.discount > 0 && (
                     <span className="text-sm text-muted-foreground line-through">
-                      {formatPrice(originalPrice)}
+                      {formatPrice(productData.price)}
                     </span>
                   )}
                 </div>
@@ -162,22 +153,18 @@ const ProductCard: React.FC<ProductCardProps> = ({
     <Card className="overflow-hidden hover:shadow-lg transition-shadow group">
       <div className="relative overflow-hidden">
         <img
-          src={productData.image || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop'}
+          src={productData.image || '/placeholder.svg'}
           alt={productData.name}
           className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.src = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop';
-          }}
         />
         <div className="absolute top-2 right-2">
           <Button variant="ghost" size="sm" className="bg-white/80 hover:bg-white">
             <Heart className="h-4 w-4" />
           </Button>
         </div>
-        {discountValue > 0 && (
+        {productData.discount && productData.discount > 0 && (
           <Badge className="absolute top-2 left-2 bg-red-500">
-            {discountValue}% OFF
+            {productData.discount}% OFF
           </Badge>
         )}
         {productData.featured && (
@@ -213,9 +200,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
             <span className="text-lg font-bold text-primary">
               {formatPrice(discountedPrice)}
             </span>
-            {discountValue > 0 && (
+            {productData.discount && productData.discount > 0 && (
               <span className="text-sm text-muted-foreground line-through ml-2">
-                {formatPrice(originalPrice)}
+                {formatPrice(productData.price)}
               </span>
             )}
           </div>
