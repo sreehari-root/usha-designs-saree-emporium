@@ -1,17 +1,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 
-export interface CheckoutData {
-  shippingAddress: {
-    firstName: string;
-    lastName: string;
-    address: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    phone: string;
-  };
+interface CheckoutData {
+  shippingAddress: any;
   paymentMethod: string;
   cartItems: any[];
   total: number;
@@ -34,16 +26,18 @@ export const processCheckout = async (checkoutData: CheckoutData): Promise<boole
 
     // Set payment intent based on payment method
     const paymentIntent = checkoutData.paymentMethod === 'cod' ? 'cash_on_delivery' : null;
+    
+    console.log('Creating order with payment intent:', paymentIntent);
 
-    // Create the order with proper total (in rupees, not cents)
+    // Create the order - store total in rupees (not cents)
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
         user_id: user.id,
-        total: checkoutData.total, // Keep as rupees for display
+        total: Math.round(checkoutData.total), // Store in rupees
+        status: 'pending',
         shipping_address: checkoutData.shippingAddress,
-        payment_intent: paymentIntent,
-        status: 'pending'
+        payment_intent: paymentIntent
       })
       .select()
       .single();
@@ -53,13 +47,23 @@ export const processCheckout = async (checkoutData: CheckoutData): Promise<boole
       throw orderError;
     }
 
-    // Create order items with proper prices
-    const orderItems = checkoutData.cartItems.map(item => ({
-      order_id: order.id,
-      product_id: item.product_id,
-      quantity: item.quantity,
-      price: item.products?.price || 0 // Store actual price in rupees
-    }));
+    console.log('Order created:', order);
+
+    // Create order items
+    const orderItems = checkoutData.cartItems.map(item => {
+      const price = item.products?.price || 0;
+      const discount = item.products?.discount || 0;
+      const finalPrice = discount > 0 ? Math.round(price * (1 - discount / 100)) : price;
+      
+      return {
+        order_id: order.id,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        price: finalPrice // Store price per item in rupees
+      };
+    });
+
+    console.log('Creating order items:', orderItems);
 
     const { error: itemsError } = await supabase
       .from('order_items')
@@ -67,6 +71,8 @@ export const processCheckout = async (checkoutData: CheckoutData): Promise<boole
 
     if (itemsError) {
       console.error('Error creating order items:', itemsError);
+      // Try to delete the order if items creation failed
+      await supabase.from('orders').delete().eq('id', order.id);
       throw itemsError;
     }
 
@@ -86,14 +92,16 @@ export const processCheckout = async (checkoutData: CheckoutData): Promise<boole
 
     toast({
       title: "Order Placed Successfully!",
-      description: `Your order #${order.id.slice(0, 8)} has been placed and is being processed.`,
+      description: `Your order #${order.id.slice(0, 8)} has been placed. You will receive a confirmation email shortly.`,
     });
 
+    console.log('Checkout completed successfully');
     return true;
+
   } catch (error) {
     console.error('Checkout error:', error);
     toast({
-      title: "Checkout Failed",
+      title: "Order Failed",
       description: "There was an error processing your order. Please try again.",
       variant: "destructive"
     });
