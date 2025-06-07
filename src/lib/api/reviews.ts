@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -40,14 +39,14 @@ export const fetchReviews = async (): Promise<Review[]> => {
       // Map profile data to reviews with proper status casting
       return reviews.map(review => ({
         ...review,
-        status: (review.status || 'pending') as 'pending' | 'approved' | 'rejected',
+        status: (review.status as 'pending' | 'approved' | 'rejected') || 'pending',
         customer_name: profiles?.find(p => p.id === review.user_id) 
-          ? `${profiles.find(p => p.id === review.user_id)?.first_name} ${profiles.find(p => p.id === review.user_id)?.last_name}`.trim()
+          ? `${profiles.find(p => p.id === review.user_id)?.first_name || ''} ${profiles.find(p => p.id === review.user_id)?.last_name || ''}`.trim()
           : 'Anonymous User'
       }));
     }
 
-    return reviews || [];
+    return [];
   } catch (error) {
     console.error('Error fetching reviews:', error);
     return [];
@@ -85,12 +84,12 @@ export const fetchApprovedReviews = async (productId?: string): Promise<Review[]
         ...review,
         status: review.status as 'pending' | 'approved' | 'rejected',
         customer_name: profiles?.find(p => p.id === review.user_id) 
-          ? `${profiles.find(p => p.id === review.user_id)?.first_name} ${profiles.find(p => p.id === review.user_id)?.last_name}`.trim()
+          ? `${profiles.find(p => p.id === review.user_id)?.first_name || ''} ${profiles.find(p => p.id === review.user_id)?.last_name || ''}`.trim()
           : 'Anonymous User'
       }));
     }
 
-    return reviews || [];
+    return [];
   } catch (error) {
     console.error('Error fetching approved reviews:', error);
     return [];

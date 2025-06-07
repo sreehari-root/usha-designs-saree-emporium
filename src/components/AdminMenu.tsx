@@ -1,52 +1,70 @@
 
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import {
-  BarChart2,
-  Package,
-  ShoppingBag,
-  Users,
+import { Link, useLocation } from 'react-router-dom';
+import { 
+  LayoutDashboard, 
+  Package, 
+  ShoppingCart, 
+  Users, 
   Star,
-  Tag,
-  FileText,
   Settings
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-interface AdminMenuProps {
-  className?: string;
-}
+const AdminMenu = () => {
+  const location = useLocation();
 
-const AdminMenu = ({ className }: AdminMenuProps) => {
   const menuItems = [
-    { icon: BarChart2, label: 'Dashboard', path: '/admin/dashboard' },
-    { icon: Package, label: 'Products', path: '/admin/products' },
-    { icon: ShoppingBag, label: 'Orders', path: '/admin/orders' },
-    { icon: Users, label: 'Customers', path: '/admin/customers' },
-    { icon: Star, label: 'Reviews', path: '/admin/reviews' },
-    { icon: Tag, label: 'Categories', path: '/admin/categories' },
-    { icon: FileText, label: 'Reports', path: '/admin/reports' },
-    { icon: Settings, label: 'Settings', path: '/admin/settings' }
+    {
+      icon: LayoutDashboard,
+      label: 'Dashboard',
+      href: '/admin',
+      active: location.pathname === '/admin'
+    },
+    {
+      icon: Package,
+      label: 'Products',
+      href: '/admin/products',
+      active: location.pathname === '/admin/products'
+    },
+    {
+      icon: ShoppingCart,
+      label: 'Orders',
+      href: '/admin/orders',
+      active: location.pathname === '/admin/orders'
+    },
+    {
+      icon: Users,
+      label: 'Customers',
+      href: '/admin/customers',
+      active: location.pathname === '/admin/customers'
+    },
+    {
+      icon: Star,
+      label: 'Reviews',
+      href: '/admin/reviews',
+      active: location.pathname === '/admin/reviews'
+    }
   ];
 
   return (
-    <nav className={className}>
+    <nav className="space-y-1">
       {menuItems.map((item) => {
         const Icon = item.icon;
         return (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
-                isActive
-                  ? 'bg-muted/50 text-foreground font-medium'
-                  : 'hover:bg-muted/50 text-muted-foreground hover:text-foreground'
-              }`
-            }
+          <Link
+            key={item.href}
+            to={item.href}
+            className={cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+              item.active
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            )}
           >
-            <Icon size={16} />
+            <Icon className="h-4 w-4" />
             {item.label}
-          </NavLink>
+          </Link>
         );
       })}
     </nav>
