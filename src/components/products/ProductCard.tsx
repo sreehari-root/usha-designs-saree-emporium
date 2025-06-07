@@ -47,7 +47,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
     rating: rating || 0,
     sales_count: salesCount || 0,
     featured: false,
-    bestseller: false
+    bestseller: false,
+    description: ''
   };
 
   // Safety check
