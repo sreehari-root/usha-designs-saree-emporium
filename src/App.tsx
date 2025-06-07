@@ -8,6 +8,8 @@ import { AuthProvider } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import CategoryPage from "./pages/CategoryPage";
 import ShopPage from "./pages/ShopPage";
+import ProductsPage from "./pages/ProductsPage";
+import NewArrivals from "./pages/NewArrivals";
 import AdminDashboard from "./pages/AdminDashboard";
 import ProductsPage from "./pages/admin/ProductsPage";
 import OrdersPage from "./pages/admin/OrdersPage";
@@ -27,6 +29,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/category/:category" element={<CategoryPage />} />
             <Route path="/shop" element={<ShopPage />} />
+            <Route path="/products" element={<ProductsPage />} />
+            <Route path="/new-arrivals" element={<NewArrivals />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/products" element={<ProductsPage />} />
             <Route path="/admin/orders" element={<OrdersPage />} />

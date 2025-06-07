@@ -7,11 +7,54 @@ import { Badge } from '@/components/ui/badge';
 import { ProductType } from '@/lib/api/products';
 
 interface ProductCardProps {
-  product: ProductType;
+  product?: ProductType;
+  // Legacy props for backward compatibility
+  id?: string;
+  name?: string;
+  price?: number;
+  discount?: number;
+  image?: string;
+  category?: string;
+  inStock?: boolean;
+  rating?: number;
+  salesCount?: number;
   viewMode?: 'grid' | 'list';
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, viewMode = 'grid' }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ 
+  product, 
+  viewMode = 'grid',
+  // Legacy props
+  id,
+  name,
+  price,
+  discount,
+  image,
+  category,
+  inStock,
+  rating,
+  salesCount
+}) => {
+  // Use product object if provided, otherwise use legacy props
+  const productData = product || {
+    id: id || '',
+    name: name || '',
+    price: price || 0,
+    discount: discount || 0,
+    image: image || '/placeholder.svg',
+    category_name: category || 'Uncategorized',
+    stock: inStock ? 10 : 0,
+    rating: rating || 0,
+    sales_count: salesCount || 0,
+    featured: false,
+    bestseller: false
+  };
+
+  // Safety check
+  if (!productData || !productData.name) {
+    return null;
+  }
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -20,9 +63,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, viewMode = 'grid' })
     }).format(price);
   };
 
-  const discountedPrice = product.discount 
-    ? product.price - (product.price * product.discount / 100)
-    : product.price;
+  const discountedPrice = productData.discount 
+    ? productData.price - (productData.price * productData.discount / 100)
+    : productData.price;
 
   if (viewMode === 'list') {
     return (
@@ -30,27 +73,27 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, viewMode = 'grid' })
         <div className="flex">
           <div className="w-48 h-48 relative overflow-hidden">
             <img
-              src={product.image || '/placeholder.svg'}
-              alt={product.name}
+              src={productData.image || '/placeholder.svg'}
+              alt={productData.name}
               className="w-full h-full object-cover"
             />
-            {product.discount && product.discount > 0 && (
+            {productData.discount && productData.discount > 0 && (
               <Badge className="absolute top-2 left-2 bg-red-500">
-                {product.discount}% OFF
+                {productData.discount}% OFF
               </Badge>
             )}
           </div>
           <CardContent className="flex-1 p-6">
             <div className="flex justify-between items-start mb-2">
-              <h3 className="text-lg font-semibold line-clamp-2">{product.name}</h3>
+              <h3 className="text-lg font-semibold line-clamp-2">{productData.name}</h3>
               <Button variant="ghost" size="sm">
                 <Heart className="h-4 w-4" />
               </Button>
             </div>
             
-            {product.description && (
+            {productData.description && (
               <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
-                {product.description}
+                {productData.description}
               </p>
             )}
 
@@ -60,7 +103,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, viewMode = 'grid' })
                   <Star
                     key={i}
                     className={`h-4 w-4 ${
-                      i < Math.floor(product.rating || 0)
+                      i < Math.floor(productData.rating || 0)
                         ? 'text-yellow-500 fill-yellow-500'
                         : 'text-gray-300'
                     }`}
@@ -68,7 +111,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, viewMode = 'grid' })
                 ))}
               </div>
               <span className="text-sm text-muted-foreground">
-                ({product.rating || 0})
+                ({productData.rating || 0})
               </span>
             </div>
 
@@ -78,17 +121,17 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, viewMode = 'grid' })
                   <span className="text-lg font-bold text-primary">
                     {formatPrice(discountedPrice)}
                   </span>
-                  {product.discount && product.discount > 0 && (
+                  {productData.discount && productData.discount > 0 && (
                     <span className="text-sm text-muted-foreground line-through">
-                      {formatPrice(product.price)}
+                      {formatPrice(productData.price)}
                     </span>
                   )}
                 </div>
                 <div className="flex gap-2">
-                  {product.featured && (
+                  {productData.featured && (
                     <Badge variant="secondary">Featured</Badge>
                   )}
-                  {product.bestseller && (
+                  {productData.bestseller && (
                     <Badge variant="secondary">Bestseller</Badge>
                   )}
                 </div>
@@ -109,8 +152,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, viewMode = 'grid' })
     <Card className="overflow-hidden hover:shadow-lg transition-shadow group">
       <div className="relative overflow-hidden">
         <img
-          src={product.image || '/placeholder.svg'}
-          alt={product.name}
+          src={productData.image || '/placeholder.svg'}
+          alt={productData.name}
           className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
         />
         <div className="absolute top-2 right-2">
@@ -118,12 +161,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, viewMode = 'grid' })
             <Heart className="h-4 w-4" />
           </Button>
         </div>
-        {product.discount && product.discount > 0 && (
+        {productData.discount && productData.discount > 0 && (
           <Badge className="absolute top-2 left-2 bg-red-500">
-            {product.discount}% OFF
+            {productData.discount}% OFF
           </Badge>
         )}
-        {product.featured && (
+        {productData.featured && (
           <Badge className="absolute bottom-2 left-2 bg-primary">
             Featured
           </Badge>
@@ -131,7 +174,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, viewMode = 'grid' })
       </div>
       
       <CardContent className="p-4">
-        <h3 className="font-semibold text-lg mb-2 line-clamp-2">{product.name}</h3>
+        <h3 className="font-semibold text-lg mb-2 line-clamp-2">{productData.name}</h3>
         
         <div className="flex items-center gap-2 mb-3">
           <div className="flex items-center">
@@ -139,7 +182,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, viewMode = 'grid' })
               <Star
                 key={i}
                 className={`h-4 w-4 ${
-                  i < Math.floor(product.rating || 0)
+                  i < Math.floor(productData.rating || 0)
                     ? 'text-yellow-500 fill-yellow-500'
                     : 'text-gray-300'
                 }`}
@@ -147,7 +190,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, viewMode = 'grid' })
             ))}
           </div>
           <span className="text-sm text-muted-foreground">
-            ({product.rating || 0})
+            ({productData.rating || 0})
           </span>
         </div>
 
@@ -156,13 +199,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, viewMode = 'grid' })
             <span className="text-lg font-bold text-primary">
               {formatPrice(discountedPrice)}
             </span>
-            {product.discount && product.discount > 0 && (
+            {productData.discount && productData.discount > 0 && (
               <span className="text-sm text-muted-foreground line-through ml-2">
-                {formatPrice(product.price)}
+                {formatPrice(productData.price)}
               </span>
             )}
           </div>
-          {product.bestseller && (
+          {productData.bestseller && (
             <Badge variant="secondary">Bestseller</Badge>
           )}
         </div>
