@@ -23,16 +23,16 @@ const FeaturedCategories = () => {
     loadCategories();
   }, []);
 
-  // Category images mapping with better images
+  // Category images mapping
   const getCategoryImage = (categoryName: string) => {
     const imageMap: Record<string, string> = {
-      'Silk Sarees': 'https://images.unsplash.com/photo-1594736797933-d0401ba04fa0?q=80&w=800&auto=format&fit=crop',
-      'Cotton Sarees': 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?q=80&w=800&auto=format&fit=crop',
-      'Wedding Collection': 'https://images.unsplash.com/photo-1606800052052-a08af7148866?q=80&w=800&auto=format&fit=crop',
-      'Lehengas': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?q=80&w=800&auto=format&fit=crop',
-      'Casual Wear': 'https://images.unsplash.com/photo-1594736797933-d0401ba04fa0?q=80&w=800&auto=format&fit=crop'
+      'Silk Sarees': 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop',
+      'Cotton Sarees': 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop',
+      'Wedding Collection': 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop',
+      'Lehengas': 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop',
+      'Casual Wear': 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop'
     };
-    return imageMap[categoryName] || 'https://images.unsplash.com/photo-1594736797933-d0401ba04fa0?q=80&w=800&auto=format&fit=crop';
+    return imageMap[categoryName] || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop';
   };
 
   if (isLoading) {

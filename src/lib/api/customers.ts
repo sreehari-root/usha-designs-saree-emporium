@@ -18,23 +18,16 @@ export interface CustomerType {
 
 export const fetchCustomers = async (): Promise<CustomerType[]> => {
   try {
-    console.log('Fetching customers...');
-    
-    // Get all profiles
+    // Get all profiles with order stats
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('*');
 
     if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
       throw profilesError;
     }
 
-    console.log('Profiles fetched:', profiles);
-
     if (!profiles || profiles.length === 0) {
-      console.log('No profiles found');
       return [];
     }
 
@@ -44,10 +37,8 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       .select('user_id, total, created_at');
 
     if (ordersError) {
-      console.error('Error fetching orders for customer stats:', ordersError);
+      console.error('Error fetching orders:', ordersError);
     }
-
-    console.log('Orders for stats:', orders);
 
     // Process orders data
     const customerStats = new Map();
@@ -90,7 +81,6 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       };
     });
 
-    console.log('Final customers data:', customers);
     return customers;
   } catch (error) {
     console.error('Error fetching customers:', error);

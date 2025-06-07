@@ -31,7 +31,15 @@ export default function ProductsPage() {
             products.map((product) => (
               <ProductCard
                 key={product.id}
-                product={product}
+                id={product.id}
+                name={product.name}
+                price={product.price}
+                discount={product.discount || 0}
+                image={product.image || '/placeholder.svg'}
+                category={product.category_name || 'Uncategorized'}
+                inStock={(product.stock || 0) > 0}
+                rating={product.rating ? Number(product.rating) : undefined}
+                salesCount={product.sales_count || 0}
               />
             ))
           ) : (

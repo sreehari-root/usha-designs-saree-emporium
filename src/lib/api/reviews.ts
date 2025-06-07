@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -37,25 +36,17 @@ export const fetchReviews = async (): Promise<Review[]> => {
         .select('id, first_name, last_name')
         .in('id', userIds);
 
-      // Map profile data to reviews with proper status casting
-      return reviews.map(review => {
-        const statusValue = review.status || 'pending';
-        const validStatus: 'pending' | 'approved' | 'rejected' = 
-          ['pending', 'approved', 'rejected'].includes(statusValue) 
-            ? statusValue as 'pending' | 'approved' | 'rejected'
-            : 'pending';
-
-        return {
-          ...review,
-          status: validStatus,
-          customer_name: profiles?.find(p => p.id === review.user_id) 
-            ? `${profiles.find(p => p.id === review.user_id)?.first_name || ''} ${profiles.find(p => p.id === review.user_id)?.last_name || ''}`.trim()
-            : 'Anonymous User'
-        };
-      });
+      // Map profile data to reviews
+      return reviews.map(review => ({
+        ...review,
+        status: (review.status || 'pending') as 'pending' | 'approved' | 'rejected',
+        customer_name: profiles?.find(p => p.id === review.user_id) 
+          ? `${profiles.find(p => p.id === review.user_id)?.first_name} ${profiles.find(p => p.id === review.user_id)?.last_name}`.trim()
+          : 'Anonymous User'
+      }));
     }
 
-    return [];
+    return reviews || [];
   } catch (error) {
     console.error('Error fetching reviews:', error);
     return [];
@@ -89,24 +80,16 @@ export const fetchApprovedReviews = async (productId?: string): Promise<Review[]
         .select('id, first_name, last_name')
         .in('id', userIds);
 
-      return reviews.map(review => {
-        const statusValue = review.status || 'approved';
-        const validStatus: 'pending' | 'approved' | 'rejected' = 
-          ['pending', 'approved', 'rejected'].includes(statusValue) 
-            ? statusValue as 'pending' | 'approved' | 'rejected'
-            : 'approved';
-
-        return {
-          ...review,
-          status: validStatus,
-          customer_name: profiles?.find(p => p.id === review.user_id) 
-            ? `${profiles.find(p => p.id === review.user_id)?.first_name || ''} ${profiles.find(p => p.id === review.user_id)?.last_name || ''}`.trim()
-            : 'Anonymous User'
-        };
-      });
+      return reviews.map(review => ({
+        ...review,
+        status: review.status as 'pending' | 'approved' | 'rejected',
+        customer_name: profiles?.find(p => p.id === review.user_id) 
+          ? `${profiles.find(p => p.id === review.user_id)?.first_name} ${profiles.find(p => p.id === review.user_id)?.last_name}`.trim()
+          : 'Anonymous User'
+      }));
     }
 
-    return [];
+    return reviews || [];
   } catch (error) {
     console.error('Error fetching approved reviews:', error);
     return [];

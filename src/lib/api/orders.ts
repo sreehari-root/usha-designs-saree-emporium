@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
 
 export interface Order {
   id: string;
@@ -43,8 +42,6 @@ interface ShippingAddress {
 
 export const fetchOrders = async (): Promise<Order[]> => {
   try {
-    console.log('Fetching orders...');
-    
     const { data: orders, error } = await supabase
       .from('orders')
       .select(`
@@ -56,60 +53,38 @@ export const fetchOrders = async (): Promise<Order[]> => {
       `)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching orders:', error);
-      throw error;
+    if (error) throw error;
+
+    // Get profile data for customer names
+    if (orders && orders.length > 0) {
+      const userIds = [...new Set(orders.map(order => order.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', userIds);
+
+      return orders.map(order => {
+        // Get customer name from profiles
+        const profile = profiles?.find(p => p.id === order.user_id);
+        const profileName = profile && profile.first_name && profile.last_name 
+          ? `${profile.first_name} ${profile.last_name}`.trim()
+          : null;
+
+        // Fallback to shipping address if profile name not available
+        const shippingAddr = order.shipping_address as ShippingAddress | null;
+        const shippingName = shippingAddr && typeof shippingAddr === 'object' && shippingAddr.firstName && shippingAddr.lastName
+          ? `${shippingAddr.firstName} ${shippingAddr.lastName}`.trim()
+          : null;
+
+        return {
+          ...order,
+          customer_name: profileName || shippingName || 'Unknown Customer',
+          customer_email: 'Available in profile' // We don't store email separately in orders
+        };
+      });
     }
 
-    console.log('Raw orders data:', orders);
-
-    if (!orders || orders.length === 0) {
-      console.log('No orders found');
-      return [];
-    }
-
-    // Get profile data for customer names separately
-    const userIds = [...new Set(orders.map(order => order.user_id))];
-    console.log('User IDs to fetch profiles for:', userIds);
-
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, first_name, last_name')
-      .in('id', userIds);
-
-    console.log('Profiles data:', profiles);
-
-    const processedOrders = orders.map(order => {
-      // Get customer name from profiles
-      const profile = profiles?.find(p => p.id === order.user_id);
-      const profileName = profile && profile.first_name && profile.last_name 
-        ? `${profile.first_name} ${profile.last_name}`.trim()
-        : null;
-
-      // Fallback to shipping address if profile name not available
-      const shippingAddr = order.shipping_address as ShippingAddress | null;
-      let shippingName = null;
-      
-      if (shippingAddr && typeof shippingAddr === 'object') {
-        if (shippingAddr.firstName && shippingAddr.lastName) {
-          shippingName = `${shippingAddr.firstName} ${shippingAddr.lastName}`.trim();
-        }
-      }
-
-      const customerName = profileName || shippingName || 'Unknown Customer';
-
-      console.log(`Order ${order.id}: profile name = ${profileName}, shipping name = ${shippingName}, final = ${customerName}`);
-
-      return {
-        ...order,
-        customer_name: customerName,
-        customer_email: 'Available in profile' // We don't store email separately in orders
-      };
-    });
-
-    console.log('Processed orders:', processedOrders);
-    return processedOrders;
-
+    return orders || [];
   } catch (error) {
     console.error('Error fetching orders:', error);
     return [];
