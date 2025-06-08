@@ -7,6 +7,8 @@ import {
   ShoppingCart, 
   Users, 
   Star,
+  Tag,
+  BarChart3,
   Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -28,6 +30,12 @@ const AdminMenu = () => {
       active: location.pathname === '/admin/products'
     },
     {
+      icon: Tag,
+      label: 'Categories',
+      href: '/admin/categories',
+      active: location.pathname === '/admin/categories'
+    },
+    {
       icon: ShoppingCart,
       label: 'Orders',
       href: '/admin/orders',
@@ -44,6 +52,12 @@ const AdminMenu = () => {
       label: 'Reviews',
       href: '/admin/reviews',
       active: location.pathname === '/admin/reviews'
+    },
+    {
+      icon: BarChart3,
+      label: 'Reports',
+      href: '/admin/reports',
+      active: location.pathname === '/admin/reports'
     }
   ];
 

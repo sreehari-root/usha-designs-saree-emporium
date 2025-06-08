@@ -16,6 +16,8 @@ import AdminProductsPage from "./pages/admin/ProductsPage";
 import OrdersPage from "./pages/admin/OrdersPage";
 import ReviewsPage from "./pages/admin/ReviewsPage";
 import CustomersPage from "./pages/admin/CustomersPage";
+import CategoriesPage from "./pages/admin/CategoriesPage";
+import ReportsPage from "./pages/admin/ReportsPage";
 import Auth from "./pages/Auth";
 import Login from "./pages/Login";
 import Account from "./pages/Account";
@@ -49,9 +51,11 @@ const App: React.FC = () => {
               <Route path="/contact" element={<Contact />} />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/products" element={<AdminProductsPage />} />
+              <Route path="/admin/categories" element={<CategoriesPage />} />
               <Route path="/admin/orders" element={<OrdersPage />} />
               <Route path="/admin/reviews" element={<ReviewsPage />} />
               <Route path="/admin/customers" element={<CustomersPage />} />
+              <Route path="/admin/reports" element={<ReportsPage />} />
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
