@@ -10,7 +10,6 @@ import { format } from 'date-fns';
 import MainLayout from '@/components/layout/MainLayout';
 import ProfileForm from '@/components/ProfileForm';
 import OrderDetails from '@/components/OrderDetails';
-import WishlistTab from '@/components/WishlistTab';
 import { fetchUserOrders, type Order } from '@/lib/api/orders';
 
 const Account = () => {
@@ -78,7 +77,7 @@ const Account = () => {
             onClose={() => {
               setShowOrderDetails(false);
               setSelectedOrder(null);
-              loadUserOrders();
+              loadUserOrders(); // Refresh orders after viewing details (in case reviews were added)
             }} 
           />
         </div>
@@ -190,7 +189,9 @@ const Account = () => {
                       <p className="text-sm text-muted-foreground">Items you've saved for later</p>
                     </CardHeader>
                     <CardContent>
-                      <WishlistTab />
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">Your wishlist is empty</p>
+                      </div>
                     </CardContent>
                   </Card>
                 </TabsContent>

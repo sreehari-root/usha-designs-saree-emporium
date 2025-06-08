@@ -18,7 +18,7 @@ export default function FeaturedProducts() {
           <h2 className="text-3xl md:text-4xl font-bold">
             Featured Collection
           </h2>
-          <a href="/shop" className="mt-4 md:mt-0 text-usha-burgundy hover:underline">
+          <a href="/products" className="mt-4 md:mt-0 text-usha-burgundy hover:underline">
             View All Products
           </a>
         </div>
@@ -37,7 +37,15 @@ export default function FeaturedProducts() {
             featuredProducts.map((product) => (
               <ProductCard
                 key={product.id}
-                product={product}
+                id={product.id}
+                name={product.name}
+                price={product.price}
+                discount={product.discount || 0}
+                image={product.image || '/placeholder.svg'}
+                category={product.category_name || 'Uncategorized'}
+                inStock={(product.stock || 0) > 0}
+                rating={product.rating ? Number(product.rating) : undefined}
+                salesCount={product.sales_count || 0}
               />
             ))
           ) : (

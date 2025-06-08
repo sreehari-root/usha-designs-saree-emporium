@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
 
 export interface CartItem {
   id: string;
@@ -15,7 +14,6 @@ export interface CartItem {
     price: number;
     image: string | null;
     discount: number | null;
-    stock: number | null;
   };
 }
 
@@ -95,8 +93,17 @@ export const addToCart = async (productId: string, quantity: number = 1): Promis
       .eq('id', productId)
       .single();
 
-    if (productError || !product) {
+    if (productError) {
       console.error('Product not found:', productError);
+      toast({
+        title: "Error",
+        description: "Product not found.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!product) {
       toast({
         title: "Error",
         description: "Product not found.",
@@ -134,10 +141,7 @@ export const addToCart = async (productId: string, quantity: number = 1): Promis
 
       const { error } = await supabase
         .from('cart_items')
-        .update({ 
-          quantity: newQuantity,
-          updated_at: new Date().toISOString()
-        })
+        .update({ quantity: newQuantity })
         .eq('id', existingItem.id);
 
       if (error) {

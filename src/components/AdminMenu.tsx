@@ -1,84 +1,52 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Package, 
-  ShoppingCart, 
-  Users, 
+import { NavLink } from 'react-router-dom';
+import {
+  BarChart2,
+  Package,
+  ShoppingBag,
+  Users,
   Star,
   Tag,
-  BarChart3,
+  FileText,
   Settings
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
-const AdminMenu = () => {
-  const location = useLocation();
+interface AdminMenuProps {
+  className?: string;
+}
 
+const AdminMenu = ({ className }: AdminMenuProps) => {
   const menuItems = [
-    {
-      icon: LayoutDashboard,
-      label: 'Dashboard',
-      href: '/admin',
-      active: location.pathname === '/admin'
-    },
-    {
-      icon: Package,
-      label: 'Products',
-      href: '/admin/products',
-      active: location.pathname === '/admin/products'
-    },
-    {
-      icon: Tag,
-      label: 'Categories',
-      href: '/admin/categories',
-      active: location.pathname === '/admin/categories'
-    },
-    {
-      icon: ShoppingCart,
-      label: 'Orders',
-      href: '/admin/orders',
-      active: location.pathname === '/admin/orders'
-    },
-    {
-      icon: Users,
-      label: 'Customers',
-      href: '/admin/customers',
-      active: location.pathname === '/admin/customers'
-    },
-    {
-      icon: Star,
-      label: 'Reviews',
-      href: '/admin/reviews',
-      active: location.pathname === '/admin/reviews'
-    },
-    {
-      icon: BarChart3,
-      label: 'Reports',
-      href: '/admin/reports',
-      active: location.pathname === '/admin/reports'
-    }
+    { icon: BarChart2, label: 'Dashboard', path: '/admin/dashboard' },
+    { icon: Package, label: 'Products', path: '/admin/products' },
+    { icon: ShoppingBag, label: 'Orders', path: '/admin/orders' },
+    { icon: Users, label: 'Customers', path: '/admin/customers' },
+    { icon: Star, label: 'Reviews', path: '/admin/reviews' },
+    { icon: Tag, label: 'Categories', path: '/admin/categories' },
+    { icon: FileText, label: 'Reports', path: '/admin/reports' },
+    { icon: Settings, label: 'Settings', path: '/admin/settings' }
   ];
 
   return (
-    <nav className="space-y-1">
+    <nav className={className}>
       {menuItems.map((item) => {
         const Icon = item.icon;
         return (
-          <Link
-            key={item.href}
-            to={item.href}
-            className={cn(
-              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-              item.active
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-            )}
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                isActive
+                  ? 'bg-muted/50 text-foreground font-medium'
+                  : 'hover:bg-muted/50 text-muted-foreground hover:text-foreground'
+              }`
+            }
           >
-            <Icon className="h-4 w-4" />
+            <Icon size={16} />
             {item.label}
-          </Link>
+          </NavLink>
         );
       })}
     </nav>

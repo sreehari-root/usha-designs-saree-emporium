@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ushaLogo, adminCredentials } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
@@ -23,7 +23,6 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn } = useAuth();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -38,14 +37,23 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      const { error } = await signIn(data.email, data.password);
-      
-      if (!error) {
+      // Check if credentials match admin login
+      if (data.email === adminCredentials.email && data.password === adminCredentials.password) {
         toast({
-          title: "Login successful",
-          description: "Welcome back to Usha Designs!",
+          title: "Admin login successful",
+          description: "Welcome back, Admin!",
         });
-        navigate('/');
+        navigate('/admin/dashboard');
+      } else {
+        // In a real app, this would be an API call to authenticate
+        // For now, we'll simulate a successful login for demo purposes
+        setTimeout(() => {
+          toast({
+            title: "Login successful",
+            description: "Welcome back to Usha Designs!",
+          });
+          navigate('/account');
+        }, 1000);
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -66,11 +74,7 @@ export default function Login() {
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
             <Link to="/">
-              <img 
-                src="/lovable-uploads/3d3c3c82-fc8a-4a55-829f-9309b34b6ca0.png" 
-                alt="Usha Designs Logo" 
-                className="w-16 h-16 mx-auto"
-              />
+              <img src={ushaLogo} alt="Usha Designs Logo" className="h-16 mx-auto" />
             </Link>
             <h1 className="mt-6 text-3xl font-bold">Welcome Back</h1>
             <p className="mt-2 text-muted-foreground">
@@ -160,7 +164,7 @@ export default function Login() {
             <p className="text-sm text-muted-foreground">
               Don't have an account?{' '}
               <Link
-                to="/auth?tab=signup"
+                to="/register"
                 className="text-usha-burgundy hover:underline font-medium"
               >
                 Create one

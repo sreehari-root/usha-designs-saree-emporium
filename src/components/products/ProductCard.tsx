@@ -1,236 +1,217 @@
 
-import React from 'react';
-import { Star, ShoppingCart, Heart } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Heart, ShoppingCart, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ProductType } from '@/lib/api/products';
+import { formatCurrency, calculateDiscountPrice, getStarRating } from '@/lib/utils';
+import { addToCart } from '@/lib/api/cart';
+import { addToWishlist, removeFromWishlist, isInWishlist } from '@/lib/api/wishlist';
+import { fetchProductImages, ProductImageType } from '@/lib/api/productImages';
+import ProductImageCarousel from './ProductImageCarousel';
 
 interface ProductCardProps {
-  product?: ProductType;
-  // Legacy props for backward compatibility
-  id?: string;
-  name?: string;
-  price?: number;
+  id: string;
+  name: string;
+  price: number;
   discount?: number;
-  image?: string;
-  category?: string;
+  image: string;
+  category: string;
   inStock?: boolean;
   rating?: number;
   salesCount?: number;
-  viewMode?: 'grid' | 'list';
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ 
-  product, 
-  viewMode = 'grid',
-  // Legacy props
+export default function ProductCard({
   id,
   name,
   price,
-  discount,
+  discount = 0,
   image,
   category,
-  inStock,
+  inStock = true,
   rating,
   salesCount
-}) => {
-  // Use product object if provided, otherwise use legacy props
-  const productData = product || {
-    id: id || '',
-    name: name || '',
-    price: price || 0,
-    discount: discount || 0,
-    image: image || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop',
-    category_name: category || 'Uncategorized',
-    stock: inStock ? 10 : 0,
-    rating: rating || 0,
-    sales_count: salesCount || 0,
-    featured: false,
-    bestseller: false,
-    description: '',
-    category_id: '',
-    created_at: '',
-    updated_at: ''
+}: ProductCardProps) {
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isInWishlistState, setIsInWishlistState] = useState(false);
+  const [isWishlistLoading, setIsWishlistLoading] = useState(false);
+  const [productImages, setProductImages] = useState<string[]>([]);
+
+  const finalPrice = discount ? calculateDiscountPrice(price, discount) : price;
+  
+  useEffect(() => {
+    const checkWishlistStatus = async () => {
+      const inWishlist = await isInWishlist(id);
+      setIsInWishlistState(inWishlist);
+    };
+    checkWishlistStatus();
+  }, [id]);
+
+  useEffect(() => {
+    const loadProductImages = async () => {
+      const images = await fetchProductImages(id);
+      const imageUrls = images.map(img => img.image_url);
+      
+      // If no images in product_images table, use the main image from products table
+      if (imageUrls.length === 0 && image) {
+        setProductImages([image]);
+      } else {
+        setProductImages(imageUrls);
+      }
+    };
+    loadProductImages();
+  }, [id, image]);
+
+  const handleAddToCart = async () => {
+    console.log('Add to cart clicked for product:', id);
+    setIsAddingToCart(true);
+    const success = await addToCart(id, 1);
+    console.log('Add to cart result:', success);
+    setIsAddingToCart(false);
   };
 
-  // Safety check
-  if (!productData || !productData.name) {
-    return null;
-  }
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-    }).format(price);
+  const handleWishlistToggle = async () => {
+    console.log('Wishlist toggle clicked for product:', id);
+    setIsWishlistLoading(true);
+    let success = false;
+    
+    if (isInWishlistState) {
+      success = await removeFromWishlist(id);
+      if (success) {
+        setIsInWishlistState(false);
+      }
+    } else {
+      success = await addToWishlist(id);
+      if (success) {
+        setIsInWishlistState(true);
+      }
+    }
+    
+    console.log('Wishlist toggle result:', success);
+    setIsWishlistLoading(false);
   };
-
-  const discountValue = productData.discount || 0;
-  const originalPrice = productData.price || 0;
-  const discountedPrice = discountValue > 0 
-    ? originalPrice - (originalPrice * discountValue / 100)
-    : originalPrice;
-
-  if (viewMode === 'list') {
-    return (
-      <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-        <div className="flex">
-          <div className="w-48 h-48 relative overflow-hidden">
-            <img
-              src={productData.image || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop'}
-              alt={productData.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop';
-              }}
-            />
-            {discountValue > 0 && (
-              <Badge className="absolute top-2 left-2 bg-red-500">
-                {discountValue}% OFF
-              </Badge>
-            )}
-          </div>
-          <CardContent className="flex-1 p-6">
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="text-lg font-semibold line-clamp-2">{productData.name}</h3>
-              <Button variant="ghost" size="sm">
-                <Heart className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            {productData.description && (
-              <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
-                {productData.description}
-              </p>
-            )}
-
-            <div className="flex items-center gap-2 mb-3">
-              <div className="flex items-center">
-                {Array(5).fill(0).map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-4 w-4 ${
-                      i < Math.floor(productData.rating || 0)
-                        ? 'text-yellow-500 fill-yellow-500'
-                        : 'text-gray-300'
-                    }`}
-                  />
-                ))}
-              </div>
-              <span className="text-sm text-muted-foreground">
-                ({productData.rating || 0})
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold text-primary">
-                    {formatPrice(discountedPrice)}
-                  </span>
-                  {discountValue > 0 && (
-                    <span className="text-sm text-muted-foreground line-through">
-                      {formatPrice(originalPrice)}
-                    </span>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  {productData.featured && (
-                    <Badge variant="secondary">Featured</Badge>
-                  )}
-                  {productData.bestseller && (
-                    <Badge variant="secondary">Bestseller</Badge>
-                  )}
-                </div>
-              </div>
-              
-              <Button>
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                Add to Cart
-              </Button>
-            </div>
-          </CardContent>
-        </div>
-      </Card>
-    );
-  }
-
+  
+  const renderStarRating = () => {
+    if (!rating) return null;
+    
+    return getStarRating(rating).map(star => (
+      <span 
+        key={star.key} 
+        className={star.type === 'empty' ? 'text-gray-300' : 'text-yellow-500'}
+      >
+        ★
+      </span>
+    ));
+  };
+  
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow group">
-      <div className="relative overflow-hidden">
-        <img
-          src={productData.image || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop'}
-          alt={productData.name}
-          className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.src = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop';
-          }}
-        />
-        <div className="absolute top-2 right-2">
-          <Button variant="ghost" size="sm" className="bg-white/80 hover:bg-white">
-            <Heart className="h-4 w-4" />
-          </Button>
-        </div>
-        {discountValue > 0 && (
-          <Badge className="absolute top-2 left-2 bg-red-500">
-            {discountValue}% OFF
+    <div className="product-card group rounded-lg border bg-card text-card-foreground overflow-hidden">
+      <div className="relative product-image-container aspect-square">
+        <Link to={`/product/${id}`}>
+          <ProductImageCarousel 
+            images={productImages}
+            productName={name}
+            className="w-full h-full"
+          />
+        </Link>
+        
+        {discount > 0 && (
+          <Badge className="absolute top-2 right-2 bg-usha-burgundy text-white">
+            {discount}% OFF
           </Badge>
         )}
-        {productData.featured && (
-          <Badge className="absolute bottom-2 left-2 bg-primary">
-            Featured
-          </Badge>
+        
+        {!inStock && (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+            <p className="text-white font-medium text-lg">Out of Stock</p>
+          </div>
         )}
+        
+        <Button 
+          variant="ghost" 
+          size="icon"
+          className={`absolute top-2 left-2 bg-white/80 hover:bg-white h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+            isInWishlistState ? 'text-red-500' : 'text-gray-600'
+          }`}
+          aria-label={isInWishlistState ? 'Remove from wishlist' : 'Add to wishlist'}
+          onClick={handleWishlistToggle}
+          disabled={isWishlistLoading}
+        >
+          {isWishlistLoading ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <Heart size={16} fill={isInWishlistState ? 'currentColor' : 'none'} />
+          )}
+        </Button>
       </div>
       
-      <CardContent className="p-4">
-        <h3 className="font-semibold text-lg mb-2 line-clamp-2">{productData.name}</h3>
-        
-        <div className="flex items-center gap-2 mb-3">
-          <div className="flex items-center">
-            {Array(5).fill(0).map((_, i) => (
-              <Star
-                key={i}
-                className={`h-4 w-4 ${
-                  i < Math.floor(productData.rating || 0)
-                    ? 'text-yellow-500 fill-yellow-500'
-                    : 'text-gray-300'
-                }`}
-              />
-            ))}
-          </div>
-          <span className="text-sm text-muted-foreground">
-            ({productData.rating || 0})
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between mb-3">
+      <div className="p-4">
+        <div className="flex justify-between items-start">
           <div>
-            <span className="text-lg font-bold text-primary">
-              {formatPrice(discountedPrice)}
-            </span>
-            {discountValue > 0 && (
-              <span className="text-sm text-muted-foreground line-through ml-2">
-                {formatPrice(originalPrice)}
-              </span>
+            <Link to={`/product/${id}`} className="block">
+              <h3 className="font-medium text-lg leading-tight hover:text-usha-burgundy transition-colors line-clamp-1">
+                {name}
+              </h3>
+            </Link>
+            
+            <p className="text-muted-foreground text-sm mt-1">
+              {category}
+            </p>
+            
+            {rating && (
+              <div className="flex items-center mt-1">
+                {renderStarRating()}
+                <span className="ml-1 text-xs text-muted-foreground">
+                  ({rating.toFixed(1)})
+                </span>
+              </div>
             )}
           </div>
-          {productData.bestseller && (
-            <Badge variant="secondary">Bestseller</Badge>
-          )}
         </div>
-
-        <Button className="w-full">
-          <ShoppingCart className="h-4 w-4 mr-2" />
-          Add to Cart
-        </Button>
-      </CardContent>
-    </Card>
+        
+        <div className="mt-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-baseline gap-2">
+              <span className="font-semibold">
+                {formatCurrency(finalPrice)}
+              </span>
+              
+              {discount > 0 && (
+                <span className="text-sm text-muted-foreground line-through">
+                  {formatCurrency(price)}
+                </span>
+              )}
+            </div>
+            
+            {salesCount !== undefined && (
+              <div className="text-xs text-muted-foreground">
+                {salesCount} sold
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div className="mt-4">
+          <Button 
+            className="w-full bg-usha-burgundy hover:bg-usha-burgundy/90 text-white"
+            disabled={!inStock || isAddingToCart}
+            onClick={handleAddToCart}
+          >
+            {isAddingToCart ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Adding...
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                Add to Cart
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
-};
-
-export default ProductCard;
+}

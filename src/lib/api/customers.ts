@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 export interface CustomerType {
   id: string;
@@ -17,23 +18,16 @@ export interface CustomerType {
 
 export const fetchCustomers = async (): Promise<CustomerType[]> => {
   try {
-    console.log('Fetching customers...');
-    
-    // Get all profiles with explicit error handling
+    // Get all profiles with order stats
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('*');
 
     if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
       throw profilesError;
     }
 
-    console.log('Profiles fetched:', profiles);
-
     if (!profiles || profiles.length === 0) {
-      console.log('No profiles found');
       return [];
     }
 
@@ -43,10 +37,8 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       .select('user_id, total, created_at');
 
     if (ordersError) {
-      console.error('Error fetching orders for customer stats:', ordersError);
+      console.error('Error fetching orders:', ordersError);
     }
-
-    console.log('Orders for stats:', orders);
 
     // Process orders data
     const customerStats = new Map();
@@ -72,7 +64,7 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       });
     }
 
-    // Combine the data without email (since we can't access auth.users with anon key)
+    // Combine the data
     const customers = profiles.map(profile => {
       const stats = customerStats.get(profile.id) || {
         orders_count: 0,
@@ -82,14 +74,13 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       
       return {
         ...profile,
-        email: 'Email not available', // Placeholder since we can't access auth data
+        email: 'customer@example.com', // Placeholder since we can't access auth.users directly
         orders_count: stats.orders_count,
         total_spent: stats.total_spent,
         last_order_date: stats.last_order_date
       };
     });
 
-    console.log('Final customers data:', customers);
     return customers;
   } catch (error) {
     console.error('Error fetching customers:', error);
