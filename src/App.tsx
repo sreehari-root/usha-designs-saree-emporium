@@ -21,6 +21,8 @@ import Login from "./pages/Login";
 import Account from "./pages/Account";
 import Cart from "./pages/Cart";
 import WishlistPage from "./pages/WishlistPage";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +45,8 @@ const App: React.FC = () => {
               <Route path="/account" element={<Account />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/wishlist" element={<WishlistPage />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/products" element={<AdminProductsPage />} />
               <Route path="/admin/orders" element={<OrdersPage />} />

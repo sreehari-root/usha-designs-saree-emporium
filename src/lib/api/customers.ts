@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface CustomerType {
@@ -34,6 +35,19 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
     if (!profiles || profiles.length === 0) {
       console.log('No profiles found');
       return [];
+    }
+
+    // Get auth users to get email addresses
+    const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers();
+    
+    console.log('Auth users:', users);
+
+    // Create a map of user IDs to emails
+    const userEmailMap = new Map();
+    if (users && !usersError) {
+      users.forEach(user => {
+        userEmailMap.set(user.id, user.email);
+      });
     }
 
     // Get orders information for each user
@@ -79,9 +93,11 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
         last_order_date: null
       };
       
+      const email = userEmailMap.get(profile.id) || 'No email available';
+      
       return {
         ...profile,
-        email: 'customer@example.com', // Placeholder since we can't access auth.users directly
+        email,
         orders_count: stats.orders_count,
         total_spent: stats.total_spent,
         last_order_date: stats.last_order_date

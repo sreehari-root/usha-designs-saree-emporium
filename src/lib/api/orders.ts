@@ -80,6 +80,16 @@ export const fetchOrders = async (): Promise<Order[]> => {
 
     console.log('Profiles data:', profiles);
 
+    // Get auth users for email addresses
+    const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers();
+    const userEmailMap = new Map();
+    
+    if (users && !usersError) {
+      users.forEach(user => {
+        userEmailMap.set(user.id, user.email);
+      });
+    }
+
     const processedOrders = orders.map(order => {
       // Get customer name from profiles
       const profile = profiles?.find(p => p.id === order.user_id);
@@ -98,13 +108,14 @@ export const fetchOrders = async (): Promise<Order[]> => {
       }
 
       const customerName = profileName || shippingName || 'Unknown Customer';
+      const customerEmail = userEmailMap.get(order.user_id) || 'Email not available';
 
       console.log(`Order ${order.id}: profile name = ${profileName}, shipping name = ${shippingName}, final = ${customerName}`);
 
       return {
         ...order,
         customer_name: customerName,
-        customer_email: 'Available in profile'
+        customer_email: customerEmail
       };
     });
 
