@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -81,12 +80,14 @@ export const fetchOrders = async (): Promise<Order[]> => {
     console.log('Profiles data:', profiles);
 
     // Get auth users for email addresses
-    const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers();
-    const userEmailMap = new Map();
+    const { data: authData, error: usersError } = await supabase.auth.admin.listUsers();
+    const userEmailMap = new Map<string, string>();
     
-    if (users && !usersError) {
-      users.forEach(user => {
-        userEmailMap.set(user.id, user.email);
+    if (authData?.users && !usersError && Array.isArray(authData.users)) {
+      authData.users.forEach(user => {
+        if (user?.id && user?.email) {
+          userEmailMap.set(user.id, user.email);
+        }
       });
     }
 

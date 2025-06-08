@@ -38,15 +38,17 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
     }
 
     // Get auth users to get email addresses
-    const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers();
+    const { data: authData, error: usersError } = await supabase.auth.admin.listUsers();
     
-    console.log('Auth users:', users);
+    console.log('Auth users:', authData);
 
     // Create a map of user IDs to emails
-    const userEmailMap = new Map();
-    if (users && !usersError) {
-      users.forEach(user => {
-        userEmailMap.set(user.id, user.email);
+    const userEmailMap = new Map<string, string>();
+    if (authData?.users && !usersError && Array.isArray(authData.users)) {
+      authData.users.forEach(user => {
+        if (user?.id && user?.email) {
+          userEmailMap.set(user.id, user.email);
+        }
       });
     }
 
