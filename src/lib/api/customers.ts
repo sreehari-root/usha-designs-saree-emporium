@@ -37,21 +37,6 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       return [];
     }
 
-    // Get auth users to get email addresses
-    const { data: authData, error: usersError } = await supabase.auth.admin.listUsers();
-    
-    console.log('Auth users:', authData);
-
-    // Create a map of user IDs to emails
-    const userEmailMap = new Map<string, string>();
-    if (authData?.users && !usersError && Array.isArray(authData.users)) {
-      authData.users.forEach(user => {
-        if (user?.id && user?.email) {
-          userEmailMap.set(user.id, user.email);
-        }
-      });
-    }
-
     // Get orders information for each user
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
@@ -87,7 +72,7 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       });
     }
 
-    // Combine the data
+    // Combine the data without email (since we can't access auth.users with anon key)
     const customers = profiles.map(profile => {
       const stats = customerStats.get(profile.id) || {
         orders_count: 0,
@@ -95,11 +80,9 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
         last_order_date: null
       };
       
-      const email = userEmailMap.get(profile.id) || 'No email available';
-      
       return {
         ...profile,
-        email,
+        email: 'Email not available', // Placeholder since we can't access auth data
         orders_count: stats.orders_count,
         total_spent: stats.total_spent,
         last_order_date: stats.last_order_date

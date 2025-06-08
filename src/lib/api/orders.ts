@@ -79,18 +79,6 @@ export const fetchOrders = async (): Promise<Order[]> => {
 
     console.log('Profiles data:', profiles);
 
-    // Get auth users for email addresses
-    const { data: authData, error: usersError } = await supabase.auth.admin.listUsers();
-    const userEmailMap = new Map<string, string>();
-    
-    if (authData?.users && !usersError && Array.isArray(authData.users)) {
-      authData.users.forEach(user => {
-        if (user?.id && user?.email) {
-          userEmailMap.set(user.id, user.email);
-        }
-      });
-    }
-
     const processedOrders = orders.map(order => {
       // Get customer name from profiles
       const profile = profiles?.find(p => p.id === order.user_id);
@@ -109,7 +97,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
       }
 
       const customerName = profileName || shippingName || 'Unknown Customer';
-      const customerEmail = userEmailMap.get(order.user_id) || 'Email not available';
+      const customerEmail = 'Email not available'; // Can't access auth data with anon key
 
       console.log(`Order ${order.id}: profile name = ${profileName}, shipping name = ${shippingName}, final = ${customerName}`);
 
