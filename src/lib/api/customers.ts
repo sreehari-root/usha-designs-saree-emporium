@@ -1,6 +1,4 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 
 export interface CustomerType {
   id: string;
@@ -20,7 +18,7 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
   try {
     console.log('Fetching customers...');
     
-    // Get all profiles
+    // Get all profiles with explicit error handling
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('*')

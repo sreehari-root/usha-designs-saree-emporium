@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, ShoppingCart, Heart, User, Menu, ChevronDown } from 'lucide-react';
@@ -134,9 +135,11 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-usha-burgundy rounded-md flex items-center justify-center">
-              <span className="text-white font-bold text-sm">UD</span>
-            </div>
+            <img 
+              src="/lovable-uploads/3d3c3c82-fc8a-4a55-829f-9309b34b6ca0.png" 
+              alt="Usha Designs Logo" 
+              className="w-8 h-8"
+            />
             <span className="font-bold text-xl text-usha-burgundy">Usha Designs</span>
           </Link>
 

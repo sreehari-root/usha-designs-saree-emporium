@@ -43,8 +43,9 @@ interface ShippingAddress {
 
 export const fetchOrders = async (): Promise<Order[]> => {
   try {
-    console.log('Fetching orders...');
+    console.log('Fetching orders for admin dashboard...');
     
+    // Get all orders with order items and product information
     const { data: orders, error } = await supabase
       .from('orders')
       .select(`
@@ -68,7 +69,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
       return [];
     }
 
-    // Get profile data for customer names separately
+    // Get profile data for customer names
     const userIds = [...new Set(orders.map(order => order.user_id))];
     console.log('User IDs to fetch profiles for:', userIds);
 
@@ -103,7 +104,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
       return {
         ...order,
         customer_name: customerName,
-        customer_email: 'Available in profile' // We don't store email separately in orders
+        customer_email: 'Available in profile'
       };
     });
 

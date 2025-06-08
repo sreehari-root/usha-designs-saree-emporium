@@ -66,9 +66,11 @@ export default function Login() {
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
             <Link to="/">
-              <div className="w-16 h-16 bg-usha-burgundy rounded-md flex items-center justify-center mx-auto">
-                <span className="text-white font-bold text-xl">UD</span>
-              </div>
+              <img 
+                src="/lovable-uploads/3d3c3c82-fc8a-4a55-829f-9309b34b6ca0.png" 
+                alt="Usha Designs Logo" 
+                className="w-16 h-16 mx-auto"
+              />
             </Link>
             <h1 className="mt-6 text-3xl font-bold">Welcome Back</h1>
             <p className="mt-2 text-muted-foreground">
