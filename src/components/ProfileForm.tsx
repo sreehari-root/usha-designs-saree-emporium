@@ -32,25 +32,31 @@ export default function ProfileForm() {
   }, [user]);
 
   const loadProfile = async () => {
+    if (!user?.id) return;
+    
     try {
+      console.log('Loading profile for user:', user.id);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user?.id)
-        .single();
+        .eq('id', user.id)
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error loading profile:', error);
         return;
       }
 
       if (data) {
+        console.log('Profile data loaded:', data);
         setProfileData({
           first_name: data.first_name || '',
           last_name: data.last_name || '',
           phone: data.phone || '',
           address: data.address || ''
         });
+      } else {
+        console.log('No profile found, will create new one');
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -59,7 +65,14 @@ export default function ProfileForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "User not authenticated. Please log in again.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setLoading(true);
     try {
@@ -81,6 +94,7 @@ export default function ProfileForm() {
         throw error;
       }
 
+      console.log('Profile saved successfully');
       toast({
         title: "Profile Updated",
         description: "Your profile has been updated successfully.",
@@ -105,6 +119,14 @@ export default function ProfileForm() {
       [field]: e.target.value
     }));
   };
+
+  if (!user) {
+    return (
+      <div className="text-center py-4">
+        <p>Please log in to view your profile.</p>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
