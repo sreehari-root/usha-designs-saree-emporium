@@ -18,14 +18,19 @@ export interface CustomerType {
 
 export const fetchCustomers = async (): Promise<CustomerType[]> => {
   try {
-    // Get all profiles with order stats
+    console.log('Fetching customers data...');
+    
+    // Get all profiles first
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('*');
 
     if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
       throw profilesError;
     }
+
+    console.log('Profiles fetched:', profiles?.length || 0);
 
     if (!profiles || profiles.length === 0) {
       return [];
@@ -37,10 +42,12 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       .select('user_id, total, created_at');
 
     if (ordersError) {
-      console.error('Error fetching orders:', ordersError);
+      console.error('Error fetching orders for customers:', ordersError);
     }
 
-    // Process orders data
+    console.log('Orders fetched for customer stats:', orders?.length || 0);
+
+    // Process orders data to calculate stats
     const customerStats = new Map();
     
     if (orders && orders.length > 0) {
@@ -74,13 +81,14 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       
       return {
         ...profile,
-        email: 'customer@example.com', // Placeholder since we can't access auth.users directly
+        email: `${profile.first_name || 'customer'}@example.com`, // Placeholder since we can't access auth.users directly
         orders_count: stats.orders_count,
         total_spent: stats.total_spent,
         last_order_date: stats.last_order_date
       };
     });
 
+    console.log('Customer data processed:', customers.length);
     return customers;
   } catch (error) {
     console.error('Error fetching customers:', error);

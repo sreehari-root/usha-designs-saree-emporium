@@ -3,16 +3,22 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
-const ProfileForm = () => {
+interface ProfileData {
+  first_name: string;
+  last_name: string;
+  phone: string;
+  address: string;
+}
+
+export default function ProfileForm() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [profile, setProfile] = useState({
+  const [profileData, setProfileData] = useState<ProfileData>({
     first_name: '',
     last_name: '',
     phone: '',
@@ -26,13 +32,11 @@ const ProfileForm = () => {
   }, [user]);
 
   const loadProfile = async () => {
-    if (!user) return;
-
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', user?.id)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -41,7 +45,7 @@ const ProfileForm = () => {
       }
 
       if (data) {
-        setProfile({
+        setProfileData({
           first_name: data.first_name || '',
           last_name: data.last_name || '',
           phone: data.phone || '',
@@ -53,38 +57,39 @@ const ProfileForm = () => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setProfile({
-      ...profile,
-      [e.target.name]: e.target.value
-    });
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
     setLoading(true);
-
     try {
+      console.log('Saving profile for user:', user.id);
+      console.log('Profile data:', profileData);
+
       const { error } = await supabase
         .from('profiles')
         .upsert({
           id: user.id,
-          ...profile,
+          ...profileData,
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id'
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error saving profile:', error);
+        throw error;
+      }
 
       toast({
-        title: "Profile updated",
-        description: "Your profile has been successfully updated.",
+        title: "Profile Updated",
+        description: "Your profile has been updated successfully.",
       });
-    } catch (error: any) {
+    } catch (error) {
+      console.error('Error updating profile:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update profile.",
+        description: "Failed to update profile. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -92,67 +97,61 @@ const ProfileForm = () => {
     }
   };
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Profile Information</CardTitle>
-        <CardDescription>
-          Update your personal information and contact details.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="first_name">First Name</Label>
-              <Input
-                id="first_name"
-                name="first_name"
-                value={profile.first_name}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="last_name">Last Name</Label>
-              <Input
-                id="last_name"
-                name="last_name"
-                value={profile.last_name}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-          </div>
-          
-          <div>
-            <Label htmlFor="phone">Phone Number</Label>
-            <Input
-              id="phone"
-              name="phone"
-              type="tel"
-              value={profile.phone}
-              onChange={handleInputChange}
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="address">Address</Label>
-            <Input
-              id="address"
-              name="address"
-              value={profile.address}
-              onChange={handleInputChange}
-            />
-          </div>
-          
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Saving...' : 'Save Profile'}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
-  );
-};
+  const handleChange = (field: keyof ProfileData) => (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setProfileData(prev => ({
+      ...prev,
+      [field]: e.target.value
+    }));
+  };
 
-export default ProfileForm;
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="first_name">First Name</Label>
+          <Input
+            id="first_name"
+            value={profileData.first_name}
+            onChange={handleChange('first_name')}
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="last_name">Last Name</Label>
+          <Input
+            id="last_name"
+            value={profileData.last_name}
+            onChange={handleChange('last_name')}
+            required
+          />
+        </div>
+      </div>
+      
+      <div>
+        <Label htmlFor="phone">Phone Number</Label>
+        <Input
+          id="phone"
+          type="tel"
+          value={profileData.phone}
+          onChange={handleChange('phone')}
+        />
+      </div>
+      
+      <div>
+        <Label htmlFor="address">Address</Label>
+        <Textarea
+          id="address"
+          value={profileData.address}
+          onChange={handleChange('address')}
+          rows={3}
+        />
+      </div>
+      
+      <Button type="submit" disabled={loading}>
+        {loading ? 'Saving...' : 'Save Profile'}
+      </Button>
+    </form>
+  );
+}

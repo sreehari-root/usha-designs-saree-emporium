@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
@@ -42,6 +43,8 @@ interface ShippingAddress {
 
 export const fetchOrders = async (): Promise<Order[]> => {
   try {
+    console.log('Fetching all orders...');
+    
     const { data: orders, error } = await supabase
       .from('orders')
       .select(`
@@ -53,15 +56,28 @@ export const fetchOrders = async (): Promise<Order[]> => {
       `)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching orders:', error);
+      throw error;
+    }
+
+    console.log('Orders fetched:', orders?.length || 0);
 
     // Get profile data for customer names
     if (orders && orders.length > 0) {
       const userIds = [...new Set(orders.map(order => order.user_id))];
-      const { data: profiles } = await supabase
+      console.log('Fetching profiles for user IDs:', userIds);
+      
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, first_name, last_name')
         .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles for orders:', profilesError);
+      }
+
+      console.log('Profiles for orders:', profiles?.length || 0);
 
       return orders.map(order => {
         // Get customer name from profiles
@@ -79,7 +95,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
         return {
           ...order,
           customer_name: profileName || shippingName || 'Unknown Customer',
-          customer_email: 'Available in profile' // We don't store email separately in orders
+          customer_email: profile ? `${profile.first_name || 'customer'}@example.com` : 'customer@example.com'
         };
       });
     }

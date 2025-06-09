@@ -42,7 +42,7 @@ export const fetchReviews = async (): Promise<Review[]> => {
         ...review,
         status: (review.status || 'pending') as 'pending' | 'approved' | 'rejected',
         customer_name: profiles?.find(p => p.id === review.user_id) 
-          ? `${profiles.find(p => p.id === review.user_id)?.first_name} ${profiles.find(p => p.id === review.user_id)?.last_name}`.trim()
+          ? `${profiles.find(p => p.id === review.user_id)?.first_name || ''} ${profiles.find(p => p.id === review.user_id)?.last_name || ''}`.trim()
           : 'Anonymous User'
       }));
     }
@@ -85,7 +85,7 @@ export const fetchApprovedReviews = async (productId?: string): Promise<Review[]
         ...review,
         status: review.status as 'pending' | 'approved' | 'rejected',
         customer_name: profiles?.find(p => p.id === review.user_id) 
-          ? `${profiles.find(p => p.id === review.user_id)?.first_name} ${profiles.find(p => p.id === review.user_id)?.last_name}`.trim()
+          ? `${profiles.find(p => p.id === review.user_id)?.first_name || ''} ${profiles.find(p => p.id === review.user_id)?.last_name || ''}`.trim()
           : 'Anonymous User'
       }));
     }
