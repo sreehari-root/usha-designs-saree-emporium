@@ -37,7 +37,7 @@ export const fetchReviews = async (): Promise<Review[]> => {
         .select('id, first_name, last_name')
         .in('id', userIds);
 
-      // Map profile data to reviews
+      // Map profile data to reviews with proper type casting
       return reviews.map(review => ({
         ...review,
         status: (review.status || 'pending') as 'pending' | 'approved' | 'rejected',
