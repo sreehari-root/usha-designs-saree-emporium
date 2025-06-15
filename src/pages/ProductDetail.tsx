@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Heart, ShoppingCart, Star, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ProductImageCarousel } from '@/components/products/ProductImageCarousel';
+import ProductImageCarousel from '@/components/products/ProductImageCarousel';
 import { supabase } from '@/integrations/supabase/client';
 import { ProductType } from '@/lib/api/products';
 import { ProductImageType, fetchProductImages } from '@/lib/api/productImages';
