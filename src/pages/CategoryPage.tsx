@@ -15,14 +15,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ChevronDown, ChevronsUpDown } from "lucide-react"
-import { useProducts } from '@/hooks/useProducts';
+import { useProductsByCategory } from '@/hooks/useProducts';
 import { ProductType } from '@/lib/api/products';
 import { Skeleton } from '@/components/ui/skeleton';
 import ProductCard from '@/components/products/ProductCard';
 
 const CategoryPage = () => {
   const { category } = useParams<{ category: string }>();
-  const { data: allProducts, isLoading, error } = useProducts();
+  const { data: categoryProducts, isLoading, error } = useProductsByCategory(category);
   
   const [filteredProducts, setFilteredProducts] = useState<ProductType[]>([]);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'default'>('default');
@@ -41,33 +41,6 @@ const CategoryPage = () => {
   const [maxPrice, setMaxPrice] = useState(100000);
   const [priceFilterRange, setPriceFilterRange] = useState([0, 100000]);
 
-  // Filter products by category first
-  const categoryProducts = React.useMemo(() => {
-    if (!allProducts || !category) return allProducts || [];
-    
-    console.log('All products:', allProducts.length);
-    console.log('Category from URL:', category);
-    console.log('Sample product categories:', allProducts.slice(0, 3).map(p => ({
-      name: p.name,
-      category_name: p.category_name
-    })));
-
-    // More flexible category matching
-    const filtered = allProducts.filter(product => {
-      if (!product.category_name) return false;
-      
-      const productCategory = product.category_name.toLowerCase().trim();
-      const urlCategory = category.toLowerCase().trim();
-      
-      console.log(`Comparing: "${productCategory}" === "${urlCategory}"`);
-      
-      return productCategory === urlCategory;
-    });
-    
-    console.log('Filtered products count:', filtered.length);
-    return filtered;
-  }, [allProducts, category]);
-
   useEffect(() => {
     if (categoryProducts && categoryProducts.length > 0) {
       const min = Math.min(...categoryProducts.map(product => product.price));
@@ -77,20 +50,10 @@ const CategoryPage = () => {
       setPriceFilterRange([min, max]);
       setFilteredProducts(categoryProducts);
     } else {
-      // If no category-specific products, show all products
-      if (allProducts && allProducts.length > 0) {
-        const min = Math.min(...allProducts.map(product => product.price));
-        const max = Math.max(...allProducts.map(product => product.price));
-        setMinPrice(min);
-        setMaxPrice(max);
-        setPriceFilterRange([min, max]);
-        setFilteredProducts(allProducts);
-      } else {
-        setFilteredProducts([]);
-      }
+      setFilteredProducts([]);
     }
     setCurrentPage(1); // Reset to first page when category changes
-  }, [categoryProducts, allProducts]);
+  }, [categoryProducts]);
 
   // Sorting function
   const sortProducts = useCallback((productsToSort: ProductType[]) => {
@@ -129,12 +92,13 @@ const CategoryPage = () => {
   };
 
   useEffect(() => {
-    const baseProducts = categoryProducts.length > 0 ? categoryProducts : (allProducts || []);
-    
-    if (!baseProducts.length) return;
+    if (!categoryProducts || categoryProducts.length === 0) {
+      setFilteredProducts([]);
+      return;
+    }
 
-    // Start with base products (category-filtered or all products)
-    let newFilteredProducts = [...baseProducts];
+    // Start with category products
+    let newFilteredProducts = [...categoryProducts];
 
     // Filter by size (if we had size data in the products)
     if (selectedSizes.length > 0) {
@@ -162,7 +126,7 @@ const CategoryPage = () => {
 
     setFilteredProducts(newFilteredProducts);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [selectedSizes, selectedColors, priceFilterRange, categoryProducts, allProducts, sortProducts]);
+  }, [selectedSizes, selectedColors, priceFilterRange, categoryProducts, sortProducts]);
 
   const pageCount = Math.ceil(filteredProducts.length / productsPerPage);
   const paginatedProducts = filteredProducts.slice(
@@ -298,8 +262,7 @@ const CategoryPage = () => {
         {category && (
           <div className="mb-4 p-2 bg-gray-100 rounded text-sm">
             <p>Category: {category}</p>
-            <p>Total products: {allProducts?.length || 0}</p>
-            <p>Category products: {categoryProducts.length}</p>
+            <p>Category products: {categoryProducts?.length || 0}</p>
             <p>Filtered products: {filteredProducts.length}</p>
           </div>
         )}
