@@ -1,23 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { Star, Search, Eye, Trash2, Check, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Search } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,15 +10,15 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
 import AdminLayout from '@/components/layout/AdminLayout';
+import ReviewsTable from '@/components/admin/reviews/ReviewsTable';
+import ReviewDetailModal from '@/components/admin/reviews/ReviewDetailModal';
 import { fetchReviews, deleteReview, updateReviewStatus, type Review } from '@/lib/api/reviews';
 
 const ReviewsPage = () => {
-  const { toast } = useToast();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -96,25 +81,6 @@ const ReviewsPage = () => {
     if (success) {
       await loadReviews();
     }
-  };
-
-  const getStatusBadge = (status: 'pending' | 'approved' | 'rejected') => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 hover:bg-yellow-50">Pending</Badge>;
-      case 'approved':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50">Approved</Badge>;
-      case 'rejected':
-        return <Badge variant="outline" className="bg-red-50 text-red-700 hover:bg-red-50">Rejected</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
-
-  const renderStars = (rating: number) => {
-    return Array(5).fill(0).map((_, i) => (
-      <Star key={i} className={`h-4 w-4 ${i < rating ? "text-yellow-500 fill-yellow-500" : "text-gray-300"}`} />
-    ));
   };
 
   if (loading) {
@@ -185,100 +151,13 @@ const ReviewsPage = () => {
               </DropdownMenu>
             </div>
             
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[100px]">Product</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Rating</TableHead>
-                    <TableHead>Comment</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentReviews.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
-                        No reviews found
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    currentReviews.map((review) => (
-                      <TableRow key={review.id}>
-                        <TableCell>
-                          <div className="h-10 w-10 rounded-md overflow-hidden">
-                            <img 
-                              src={review.products?.image || '/placeholder.svg'} 
-                              alt={review.products?.name || 'Product'} 
-                              className="h-full w-full object-cover"
-                            />
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-medium">{review.customer_name || 'Anonymous User'}</TableCell>
-                        <TableCell>
-                          <div className="flex">
-                            {renderStars(review.rating)}
-                          </div>
-                        </TableCell>
-                        <TableCell className="max-w-[200px]">
-                          <p className="truncate">{review.comment || 'No comment'}</p>
-                        </TableCell>
-                        <TableCell>{format(new Date(review.created_at), 'MMM dd, yyyy')}</TableCell>
-                        <TableCell>{getStatusBadge(review.status)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => viewReview(review)}
-                            >
-                              <Eye className="h-4 w-4" />
-                              <span className="sr-only">View</span>
-                            </Button>
-                            
-                            {review.status === 'pending' && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-green-600"
-                                  onClick={() => handleApproveReview(review.id)}
-                                >
-                                  <Check className="h-4 w-4" />
-                                  <span className="sr-only">Approve</span>
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-red-600"
-                                  onClick={() => handleRejectReview(review.id)}
-                                >
-                                  <X className="h-4 w-4" />
-                                  <span className="sr-only">Reject</span>
-                                </Button>
-                              </>
-                            )}
-                            
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-600"
-                              onClick={() => handleDeleteReview(review.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              <span className="sr-only">Delete</span>
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            <ReviewsTable 
+              reviews={currentReviews}
+              onViewReview={viewReview}
+              onApproveReview={handleApproveReview}
+              onRejectReview={handleRejectReview}
+              onDeleteReview={handleDeleteReview}
+            />
             
             {filteredReviews.length > 0 && pageCount > 1 && (
               <div className="flex justify-center mt-4">
@@ -318,92 +197,16 @@ const ReviewsPage = () => {
         </Card>
       </div>
       
-      {/* Review Detail Modal */}
-      <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Review Details</DialogTitle>
-          </DialogHeader>
-          
-          {selectedReview && (
-            <div className="space-y-6">
-              <div className="flex gap-4">
-                <div className="h-20 w-20 rounded-md overflow-hidden">
-                  <img 
-                    src={selectedReview.products?.image || '/placeholder.svg'} 
-                    alt={selectedReview.products?.name || 'Product'} 
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-medium">{selectedReview.products?.name || 'Unknown Product'}</h3>
-                  <p className="text-muted-foreground">Product ID: {selectedReview.product_id}</p>
-                </div>
-              </div>
-              
-              <div className="border-t pt-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <p className="font-medium">Customer:</p>
-                    <p>{selectedReview.customer_name || 'Anonymous User'}</p>
-                  </div>
-                  <div className="flex justify-between">
-                    <p className="font-medium">Submitted:</p>
-                    <p>{format(new Date(selectedReview.created_at), 'MMMM dd, yyyy')}</p>
-                  </div>
-                  <div className="flex justify-between">
-                    <p className="font-medium">Status:</p>
-                    <p>{getStatusBadge(selectedReview.status)}</p>
-                  </div>
-                  <div className="flex justify-between">
-                    <p className="font-medium">Rating:</p>
-                    <div className="flex">
-                      {renderStars(selectedReview.rating)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="border-t pt-4">
-                <p className="font-medium mb-2">Comment:</p>
-                <p className="text-sm">{selectedReview.comment || 'No comment provided'}</p>
-              </div>
-              
-              <div className="flex justify-end space-x-2 pt-4 border-t">
-                {selectedReview.status === 'pending' && (
-                  <>
-                    <Button
-                      variant="outline"
-                      className="text-green-600"
-                      onClick={() => {
-                        handleApproveReview(selectedReview.id);
-                        setIsViewModalOpen(false);
-                      }}
-                    >
-                      <Check className="h-4 w-4 mr-2" />
-                      Approve
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="text-red-600"
-                      onClick={() => {
-                        handleRejectReview(selectedReview.id);
-                        setIsViewModalOpen(false);
-                      }}
-                    >
-                      <X className="h-4 w-4 mr-2" />
-                      Reject
-                    </Button>
-                  </>
-                )}
-                <Button onClick={() => setIsViewModalOpen(false)}>
-                  Close
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <ReviewDetailModal 
+        review={selectedReview}
+        isOpen={isViewModalOpen}
+        onClose={() => {
+          setIsViewModalOpen(false);
+          setSelectedReview(null);
+        }}
+        onApprove={handleApproveReview}
+        onReject={handleRejectReview}
+      />
     </AdminLayout>
   );
 };
