@@ -36,7 +36,7 @@ export default function Auth() {
   );
 
   useEffect(() => {
-    // Check for password recovery session in URL hash
+    // Check for password recovery session in URL hash - this must happen FIRST
     const checkForPasswordRecovery = async () => {
       const hashParams = new URLSearchParams(window.location.hash.slice(1));
       const accessToken = hashParams.get('access_token');
@@ -44,6 +44,7 @@ export default function Auth() {
       const type = hashParams.get('type');
       
       if (type === 'recovery' && accessToken && refreshToken) {
+        console.log('Password recovery URL detected, showing reset form');
         try {
           // Set the session with the tokens from the URL
           const { data, error } = await supabase.auth.setSession({
@@ -73,7 +74,7 @@ export default function Auth() {
     }
   }, [tabParam, resetParam, showPasswordReset]);
 
-  // If user is already logged in and not in password reset flow, redirect to homepage
+  // Only redirect if user is logged in AND we're not in password reset flow
   if (user && !showPasswordReset) {
     return <Navigate to="/" />;
   }
