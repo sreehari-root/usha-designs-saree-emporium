@@ -1,6 +1,5 @@
 
 import React from 'react';
-import MainLayout from '@/components/layout/MainLayout';
 import {
   Accordion,
   AccordionContent,
@@ -53,53 +52,51 @@ const FAQ = () => {
   ];
 
   return (
-    <MainLayout>
-      <div className="container mx-auto py-12 px-4">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-usha-burgundy mb-4">Frequently Asked Questions</h1>
-            <div className="indian-border w-24 mx-auto mb-6"></div>
-            <p className="text-xl text-muted-foreground">
-              Find answers to common questions about our products and services
-            </p>
-          </div>
+    <div className="container mx-auto py-12 px-4">
+      <div className="max-w-3xl mx-auto">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-usha-burgundy mb-4">Frequently Asked Questions</h1>
+          <div className="indian-border w-24 mx-auto mb-6"></div>
+          <p className="text-xl text-muted-foreground">
+            Find answers to common questions about our products and services
+          </p>
+        </div>
 
-          <Accordion type="single" collapsible className="space-y-4">
-            {faqs.map((faq, index) => (
-              <AccordionItem key={index} value={`item-${index}`} className="border rounded-lg px-6">
-                <AccordionTrigger className="text-left hover:text-usha-burgundy">
-                  {faq.question}
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground pt-2">
-                  {faq.answer}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+        <Accordion type="single" collapsible className="space-y-4">
+          {faqs.map((faq, index) => (
+            <AccordionItem key={index} value={`item-${index}`} className="border rounded-lg px-6">
+              <AccordionTrigger className="text-left hover:text-usha-burgundy">
+                {faq.question}
+              </AccordionTrigger>
+              <AccordionContent className="text-muted-foreground pt-2">
+                {faq.answer}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
 
-          <div className="mt-12 text-center">
-            <h3 className="text-xl font-semibold mb-4">Still have questions?</h3>
-            <p className="text-muted-foreground mb-6">
-              Can't find the answer you're looking for? Our customer service team is here to help.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a 
-                href="mailto:contact@ushadesigns.com"
-                className="inline-flex items-center justify-center px-6 py-3 bg-usha-burgundy text-white rounded-md hover:bg-usha-burgundy/90 transition-colors"
-              >
-                Email Support
-              </a>
-              <a 
-                href="tel:+919876543210"
-                className="inline-flex items-center justify-center px-6 py-3 border border-usha-burgundy text-usha-burgundy rounded-md hover:bg-usha-burgundy/10 transition-colors"
-              >
-                Call Support
-              </a>
-            </div>
+        <div className="mt-12 text-center">
+          <h3 className="text-xl font-semibold mb-4">Still have questions?</h3>
+          <p className="text-muted-foreground mb-6">
+            Can't find the answer you're looking for? Our customer service team is here to help.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a 
+              href="mailto:contact@ushadesigns.com"
+              className="inline-flex items-center justify-center px-6 py-3 bg-usha-burgundy text-white rounded-md hover:bg-usha-burgundy/90 transition-colors"
+            >
+              Email Support
+            </a>
+            <a 
+              href="tel:+919876543210"
+              className="inline-flex items-center justify-center px-6 py-3 border border-usha-burgundy text-usha-burgundy rounded-md hover:bg-usha-burgundy/10 transition-colors"
+            >
+              Call Support
+            </a>
           </div>
         </div>
       </div>
-    </MainLayout>
+    </div>
   );
 };
 
