@@ -43,9 +43,9 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       return [];
     }
 
-    // Get all user emails - pass null to get all users
+    // Get all user emails - use empty array to trigger the "get all users" logic
     const { data: allUserEmails, error: emailError } = await supabase
-      .rpc('get_user_emails', { user_ids: null }) as { data: Array<{id: string, email: string}> | null, error: any };
+      .rpc('get_user_emails', { user_ids: [] }) as { data: Array<{id: string, email: string}> | null, error: any };
 
     if (emailError) {
       console.error('Error fetching all user emails:', emailError);
