@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import AdminLayout from './AdminLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -56,23 +57,22 @@ export default function MainLayout({
   if (loading && (requireAuth || adminOnly)) {
     return (
       <div className="flex min-h-screen flex-col">
-        {!isAdminRoute && <Navbar />}
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading...</p>
           </div>
         </main>
-        {!isAdminRoute && <Footer />}
       </div>
     );
   }
 
-  // For admin routes, don't show the regular navbar and footer
+  // For admin routes, use AdminLayout which handles its own navbar
   if (isAdminRoute) {
-    return <>{children}</>;
+    return <AdminLayout>{children}</AdminLayout>;
   }
 
+  // For regular routes, use the standard layout with navbar and footer
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
