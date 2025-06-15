@@ -33,15 +33,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (!mounted) return;
 
-        // For PASSWORD_RECOVERY events, we don't want to automatically set the user
-        // as "logged in" - this should be handled by the Auth component's password reset flow
-        if (event === 'PASSWORD_RECOVERY') {
-          console.log('Password recovery detected, not setting user state');
-          setSession(session); // Keep session for token access
-          setLoading(false);
-          return;
-        }
-
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -76,27 +67,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         if (mounted) {
-          // Check if this is a password recovery session by looking at the URL
-          const urlParams = new URLSearchParams(window.location.hash.slice(1));
-          const type = urlParams.get('type');
+          setSession(session);
+          setUser(session?.user ?? null);
           
-          if (type === 'recovery' && session) {
-            console.log('Initial password recovery session detected');
-            setSession(session); // Keep session for token access
-            setUser(null); // Don't set user as logged in
-          } else {
-            setSession(session);
-            setUser(session?.user ?? null);
-            
-            if (session?.user) {
-              // Defer profile and role operations
-              setTimeout(() => {
-                if (mounted) {
-                  updateProfileFromMetadata(session.user);
-                  checkUserRole(session.user.id);
-                }
-              }, 0);
-            }
+          if (session?.user) {
+            // Defer profile and role operations
+            setTimeout(() => {
+              if (mounted) {
+                updateProfileFromMetadata(session.user);
+                checkUserRole(session.user.id);
+              }
+            }, 0);
           }
           
           setLoading(false);

@@ -9,10 +9,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '@/hooks/use-toast';
 
 interface PasswordResetFormProps {
+  recoveryTokens: {
+    access_token: string;
+    refresh_token: string;
+  };
   onBack: () => void;
 }
 
-export default function PasswordResetForm({ onBack }: PasswordResetFormProps) {
+export default function PasswordResetForm({ recoveryTokens, onBack }: PasswordResetFormProps) {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -38,12 +42,25 @@ export default function PasswordResetForm({ onBack }: PasswordResetFormProps) {
     }
 
     try {
-      const { error } = await supabase.auth.updateUser({
+      // First, set the session with the recovery tokens
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: recoveryTokens.access_token,
+        refresh_token: recoveryTokens.refresh_token
+      });
+
+      if (sessionError) {
+        setError('Invalid or expired recovery link. Please request a new password reset.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Now update the password
+      const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword
       });
 
-      if (error) {
-        setError(error.message);
+      if (updateError) {
+        setError(updateError.message);
       } else {
         toast({
           title: "Password updated successfully",

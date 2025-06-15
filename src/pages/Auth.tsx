@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import PasswordResetForm from '@/components/auth/PasswordResetForm';
 
 export default function Auth() {
-  const { signIn, signUp, resetPassword, user, session } = useAuth();
+  const { signIn, signUp, resetPassword, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -31,36 +30,30 @@ export default function Auth() {
   const [resetError, setResetError] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [recoveryTokens, setRecoveryTokens] = useState<{access_token: string, refresh_token: string} | null>(null);
   const [activeTab, setActiveTab] = useState<string>(
     resetParam === 'true' ? 'reset' : (tabParam === 'signup' ? 'signup' : 'login')
   );
 
   useEffect(() => {
     // Check for password recovery session in URL hash - this must happen FIRST
-    const checkForPasswordRecovery = async () => {
+    const checkForPasswordRecovery = () => {
       const hashParams = new URLSearchParams(window.location.hash.slice(1));
       const accessToken = hashParams.get('access_token');
       const refreshToken = hashParams.get('refresh_token');
       const type = hashParams.get('type');
       
       if (type === 'recovery' && accessToken && refreshToken) {
-        console.log('Password recovery URL detected, showing reset form');
-        try {
-          // Set the session with the tokens from the URL
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken
-          });
-          
-          if (!error && data.session) {
-            setShowPasswordReset(true);
-            // Clear the URL hash
-            window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
-            return;
-          }
-        } catch (error) {
-          console.error('Error setting recovery session:', error);
-        }
+        console.log('Password recovery URL detected, storing tokens and showing reset form');
+        // Store the tokens without setting the session
+        setRecoveryTokens({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        });
+        setShowPasswordReset(true);
+        // Clear the URL hash
+        window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+        return;
       }
     };
 
@@ -80,7 +73,7 @@ export default function Auth() {
   }
 
   // Show password reset form if we're in recovery mode
-  if (showPasswordReset) {
+  if (showPasswordReset && recoveryTokens) {
     return (
       <div className="container flex items-center justify-center py-16">
         <div className="w-full max-w-md">
@@ -89,7 +82,13 @@ export default function Auth() {
             <h1 className="text-3xl font-serif font-medium text-gray-800">Reset Your Password</h1>
             <p className="text-gray-600 mt-2">Enter your new password below</p>
           </div>
-          <PasswordResetForm onBack={() => setShowPasswordReset(false)} />
+          <PasswordResetForm 
+            recoveryTokens={recoveryTokens}
+            onBack={() => {
+              setShowPasswordReset(false);
+              setRecoveryTokens(null);
+            }} 
+          />
         </div>
       </div>
     );
