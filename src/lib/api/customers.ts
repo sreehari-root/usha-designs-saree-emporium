@@ -20,6 +20,27 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
   try {
     console.log('Fetching customers data...');
     
+    // Check if user is admin first
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('No authenticated user');
+      return [];
+    }
+
+    // Verify admin status
+    const { data: isAdminData, error: adminError } = await supabase
+      .rpc('is_admin');
+
+    if (adminError) {
+      console.error('Error checking admin status:', adminError);
+      return [];
+    }
+
+    if (!isAdminData) {
+      console.error('User is not admin');
+      return [];
+    }
+    
     // Get all profiles first
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')

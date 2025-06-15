@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -42,8 +43,29 @@ interface ShippingAddress {
 
 export const fetchOrders = async (): Promise<Order[]> => {
   try {
-    console.log('Fetching all orders...');
+    console.log('Fetching all orders for admin...');
     
+    // Check if user is admin first
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('No authenticated user');
+      return [];
+    }
+
+    // Verify admin status
+    const { data: isAdminData, error: adminError } = await supabase
+      .rpc('is_admin');
+
+    if (adminError) {
+      console.error('Error checking admin status:', adminError);
+      return [];
+    }
+
+    if (!isAdminData) {
+      console.error('User is not admin');
+      return [];
+    }
+
     const { data: orders, error } = await supabase
       .from('orders')
       .select(`
