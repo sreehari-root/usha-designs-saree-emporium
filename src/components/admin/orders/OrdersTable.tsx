@@ -54,6 +54,14 @@ const OrdersTable = ({ orders, onViewOrder, onUpdateStatus }: OrdersTableProps) 
   }
 
   console.log('OrdersTable: Rendering orders:', orders.length);
+  console.log('OrdersTable: Order details:', orders.map(o => ({
+    id: o.id.slice(0, 8),
+    user_id: o.user_id.slice(0, 8),
+    customer_name: o.customer_name,
+    customer_email: o.customer_email,
+    total: o.total,
+    status: o.status
+  })));
 
   return (
     <div className="rounded-md border">
@@ -70,22 +78,27 @@ const OrdersTable = ({ orders, onViewOrder, onUpdateStatus }: OrdersTableProps) 
         </TableHeader>
         <TableBody>
           {orders.map((order) => {
-            console.log('OrdersTable: Rendering order:', order.id, 'Customer:', order.customer_name);
+            console.log('OrdersTable: Rendering order:', order.id.slice(0, 8), 'Customer:', order.customer_name, 'User ID:', order.user_id.slice(0, 8));
             
             return (
               <TableRow key={order.id}>
                 <TableCell className="font-medium">
-                  {order.id.slice(0, 8)}...
+                  <div>
+                    <div>{order.id.slice(0, 8)}...</div>
+                    <div className="text-xs text-muted-foreground">
+                      User: {order.user_id.slice(0, 8)}...
+                    </div>
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div>
                     <p className="font-medium">{order.customer_name || 'Unknown Customer'}</p>
                     <p className="text-sm text-muted-foreground">
-                      {order.customer_email || 'No email'}
+                      {order.customer_email || 'No email available'}
                     </p>
                     {order.shipping_address?.firstName && order.shipping_address?.lastName && (
                       <p className="text-xs text-muted-foreground">
-                        {order.shipping_address.firstName} {order.shipping_address.lastName}
+                        Shipping: {order.shipping_address.firstName} {order.shipping_address.lastName}
                       </p>
                     )}
                   </div>
