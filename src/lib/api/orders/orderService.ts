@@ -30,6 +30,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
       return [];
     }
 
+    // Fetch orders using service role bypass for admin
     const { data: orders, error } = await supabase
       .from('orders')
       .select(`
@@ -112,6 +113,8 @@ export const fetchOrders = async (): Promise<Order[]> => {
 
 export const fetchUserOrders = async (userId: string): Promise<Order[]> => {
   try {
+    console.log('Fetching orders for user:', userId);
+    
     const { data: orders, error } = await supabase
       .from('orders')
       .select(`
@@ -124,8 +127,12 @@ export const fetchUserOrders = async (userId: string): Promise<Order[]> => {
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching user orders:', error);
+      throw error;
+    }
 
+    console.log('User orders fetched:', orders?.length || 0);
     return orders || [];
   } catch (error) {
     console.error('Error fetching user orders:', error);

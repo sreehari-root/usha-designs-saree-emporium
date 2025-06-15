@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -47,8 +48,9 @@ const Account = () => {
     setShowOrderDetails(true);
   };
 
-  const handleOrderUpdate = () => {
-    loadUserOrders();
+  const handleOrderUpdate = async () => {
+    console.log('Order update triggered, refreshing orders...');
+    await loadUserOrders();
   };
 
   if (!user) {

@@ -5,15 +5,23 @@ import { OrderStatus } from './types';
 
 export const updateOrderStatus = async (orderId: string, status: OrderStatus): Promise<boolean> => {
   try {
-    const { error } = await supabase
+    console.log('Updating order status:', orderId, 'to', status);
+    
+    const { data, error } = await supabase
       .from('orders')
       .update({ 
         status,
         updated_at: new Date().toISOString()
       })
-      .eq('id', orderId);
+      .eq('id', orderId)
+      .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating order status:', error);
+      throw error;
+    }
+
+    console.log('Order status updated successfully:', data);
 
     toast({
       title: "Order Updated",

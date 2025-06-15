@@ -40,12 +40,22 @@ const OrdersTab = ({ orders, loading, onViewOrder, onOrderUpdate }: OrdersTabPro
   };
 
   const handleCancelOrder = async (orderId: string) => {
+    console.log('Attempting to cancel order:', orderId);
     setCancellingOrderId(orderId);
-    const success = await updateOrderStatus(orderId, 'cancelled');
-    if (success) {
-      onOrderUpdate();
+    
+    try {
+      const success = await updateOrderStatus(orderId, 'cancelled');
+      console.log('Cancel order result:', success);
+      
+      if (success) {
+        // Refresh the orders list immediately
+        onOrderUpdate();
+      }
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+    } finally {
+      setCancellingOrderId(null);
     }
-    setCancellingOrderId(null);
   };
 
   return (
@@ -99,7 +109,7 @@ const OrdersTab = ({ orders, loading, onViewOrder, onOrderUpdate }: OrdersTabPro
                           disabled={cancellingOrderId === order.id}
                         >
                           <X className="w-4 h-4" />
-                          Cancel
+                          {cancellingOrderId === order.id ? 'Cancelling...' : 'Cancel'}
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
