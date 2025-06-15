@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Heart, ShoppingCart, Star, ArrowLeft } from 'lucide-react';
@@ -102,20 +103,17 @@ export default function ProductDetail() {
   
   // Add main product image first if it exists
   if (product.image) {
-    carouselImages.push({ url: product.image, alt: product.name });
+    carouselImages.push(product.image);
   }
   
   // Add additional product images
-  productImages.forEach((img, index) => {
-    carouselImages.push({ 
-      url: img.image_url, 
-      alt: `${product.name} - Image ${index + 2}` 
-    });
+  productImages.forEach((img) => {
+    carouselImages.push(img.image_url);
   });
 
   // If no images at all, use placeholder
   if (carouselImages.length === 0) {
-    carouselImages.push({ url: '/placeholder.svg', alt: product.name });
+    carouselImages.push('/placeholder.svg');
   }
 
   return (
@@ -132,7 +130,10 @@ export default function ProductDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Product Images */}
         <div className="space-y-4">
-          <ProductImageCarousel images={carouselImages} />
+          <ProductImageCarousel 
+            images={carouselImages} 
+            productName={product.name}
+          />
         </div>
 
         {/* Product Info */}
