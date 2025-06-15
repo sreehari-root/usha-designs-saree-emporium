@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Slider } from "@/components/ui/slider"
@@ -6,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Checkbox } from "@/components/ui/checkbox"
-import { AspectRatio } from "@/components/ui/aspect-ratio"
 import { Badge } from "@/components/ui/badge"
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import {
@@ -16,14 +16,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ChevronDown, ChevronsUpDown } from "lucide-react"
-import { useProductsByCategory } from '@/hooks/useProducts';
+import { useProducts } from '@/hooks/useProducts';
 import { ProductType } from '@/lib/api/products';
 import { Skeleton } from '@/components/ui/skeleton';
 import ProductCard from '@/components/products/ProductCard';
 
 const CategoryPage = () => {
   const { category } = useParams<{ category: string }>();
-  const { data: allProducts, isLoading, error } = useProductsByCategory(category);
+  const { data: allProducts, isLoading, error } = useProducts();
   
   const [filteredProducts, setFilteredProducts] = useState<ProductType[]>([]);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'default'>('default');
@@ -31,7 +31,6 @@ const CategoryPage = () => {
   // Define available sizes manually since the mock data doesn't have sizes
   const [availableSizes] = useState(['S', 'M', 'L', 'XL', 'XXL']);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 12;
 
@@ -43,17 +42,28 @@ const CategoryPage = () => {
   const [maxPrice, setMaxPrice] = useState(100000);
   const [priceFilterRange, setPriceFilterRange] = useState([0, 100000]);
 
+  // Filter products by category first
+  const categoryProducts = React.useMemo(() => {
+    if (!allProducts || !category) return [];
+    
+    return allProducts.filter(product => 
+      product.category_name?.toLowerCase() === category.toLowerCase()
+    );
+  }, [allProducts, category]);
+
   useEffect(() => {
-    if (allProducts && allProducts.length > 0) {
-      const min = Math.min(...allProducts.map(product => product.price));
-      const max = Math.max(...allProducts.map(product => product.price));
+    if (categoryProducts && categoryProducts.length > 0) {
+      const min = Math.min(...categoryProducts.map(product => product.price));
+      const max = Math.max(...categoryProducts.map(product => product.price));
       setMinPrice(min);
       setMaxPrice(max);
       setPriceFilterRange([min, max]);
-      setFilteredProducts(allProducts);
+      setFilteredProducts(categoryProducts);
+    } else {
+      setFilteredProducts([]);
     }
     setCurrentPage(1); // Reset to first page when category changes
-  }, [allProducts]);
+  }, [categoryProducts]);
 
   // Sorting function
   const sortProducts = useCallback((productsToSort: ProductType[]) => {
@@ -92,10 +102,10 @@ const CategoryPage = () => {
   };
 
   useEffect(() => {
-    if (!allProducts) return;
+    if (!categoryProducts) return;
 
-    // Apply filters
-    let newFilteredProducts = [...allProducts];
+    // Start with category-filtered products
+    let newFilteredProducts = [...categoryProducts];
 
     // Filter by size (if we had size data in the products)
     if (selectedSizes.length > 0) {
@@ -123,7 +133,7 @@ const CategoryPage = () => {
 
     setFilteredProducts(newFilteredProducts);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [selectedSizes, selectedColors, priceFilterRange, allProducts, sortProducts]);
+  }, [selectedSizes, selectedColors, priceFilterRange, categoryProducts, sortProducts]);
 
   const pageCount = Math.ceil(filteredProducts.length / productsPerPage);
   const paginatedProducts = filteredProducts.slice(
