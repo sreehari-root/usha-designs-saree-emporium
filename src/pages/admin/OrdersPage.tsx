@@ -40,6 +40,13 @@ const OrdersPage = () => {
       
       if (ordersData.length === 0) {
         console.warn('OrdersPage: No orders returned from fetchOrders');
+        
+        // Let's also try to debug by checking the database directly
+        console.log('OrdersPage: Attempting to debug database connection...');
+        
+        // Add some debugging info
+        console.log('OrdersPage: Current window location:', window.location.href);
+        console.log('OrdersPage: Orders data structure:', ordersData);
       }
       
       setOrders(ordersData);
@@ -64,6 +71,7 @@ const OrdersPage = () => {
   });
   
   console.log('OrdersPage: Filtered orders:', filteredOrders.length);
+  console.log('OrdersPage: All orders for filtering:', orders.map(o => ({ id: o.id, status: o.status, customer_name: o.customer_name })));
   
   // Pagination
   const indexOfLastOrder = currentPage * ordersPerPage;
@@ -112,9 +120,21 @@ const OrdersPage = () => {
         <CardHeader className="pb-2">
           <CardTitle>Order List</CardTitle>
           {orders.length === 0 && !loading && (
-            <p className="text-sm text-muted-foreground">
-              No orders found. This could mean no orders have been placed yet, or there might be an issue with data fetching.
-            </p>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+              <h4 className="text-sm font-medium text-yellow-800 mb-2">Debug Information:</h4>
+              <p className="text-sm text-yellow-700 mb-2">
+                No orders found. This could mean:
+              </p>
+              <ul className="text-sm text-yellow-700 list-disc list-inside space-y-1">
+                <li>No orders have been placed yet</li>
+                <li>There might be an issue with the database connection</li>
+                <li>The RPC function for fetching user emails might not be working</li>
+                <li>Row Level Security policies might be blocking access</li>
+              </ul>
+              <p className="text-xs text-yellow-600 mt-2">
+                Check the browser console for detailed error logs.
+              </p>
+            </div>
           )}
         </CardHeader>
         <CardContent>
@@ -168,6 +188,9 @@ const OrdersPage = () => {
               <p className="text-sm text-muted-foreground mt-2">
                 Orders will appear here once customers make purchases
               </p>
+              <Button onClick={loadOrders} variant="outline" className="mt-4">
+                Try Refreshing
+              </Button>
             </div>
           ) : (
             <>
