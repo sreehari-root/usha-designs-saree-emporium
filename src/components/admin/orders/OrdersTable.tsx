@@ -48,10 +48,12 @@ const OrdersTable = ({ orders, onViewOrder, onUpdateStatus }: OrdersTableProps) 
   if (orders.length === 0) {
     return (
       <div className="text-center py-8">
-        No orders found
+        <p className="text-muted-foreground">No orders to display</p>
       </div>
     );
   }
+
+  console.log('OrdersTable: Rendering orders:', orders.length);
 
   return (
     <div className="rounded-md border">
@@ -67,80 +69,90 @@ const OrdersTable = ({ orders, onViewOrder, onUpdateStatus }: OrdersTableProps) 
           </TableRow>
         </TableHeader>
         <TableBody>
-          {orders.map((order) => (
-            <TableRow key={order.id}>
-              <TableCell className="font-medium">{order.id.slice(0, 8)}</TableCell>
-              <TableCell>
-                <div>
-                  <p>{order.customer_name || 'Unknown Customer'}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {order.shipping_address?.firstName && order.shipping_address?.lastName 
-                      ? `${order.shipping_address.firstName} ${order.shipping_address.lastName}`
-                      : 'Customer details'
-                    }
-                  </p>
-                </div>
-              </TableCell>
-              <TableCell>{format(new Date(order.created_at), 'PP')}</TableCell>
-              <TableCell>{getStatusBadge(order.status)}</TableCell>
-              <TableCell>₹{order.total.toLocaleString('en-IN')}</TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onViewOrder(order)}
-                  >
-                    <Eye className="h-4 w-4" />
-                    <span className="sr-only">View</span>
-                  </Button>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <ChevronDown className="h-4 w-4" />
-                        <span className="sr-only">Change Status</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem 
-                        onClick={() => onUpdateStatus(order.id, 'pending')}
-                        disabled={order.status === 'pending'}
-                      >
-                        Mark as Pending
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => onUpdateStatus(order.id, 'processing')}
-                        disabled={order.status === 'processing'}
-                      >
-                        Mark as Processing
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => onUpdateStatus(order.id, 'shipped')}
-                        disabled={order.status === 'shipped'}
-                      >
-                        Mark as Shipped
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => onUpdateStatus(order.id, 'completed')}
-                        disabled={order.status === 'completed'}
-                      >
-                        Mark as Completed
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        onClick={() => onUpdateStatus(order.id, 'cancelled')}
-                        disabled={order.status === 'cancelled'}
-                        className="text-red-600"
-                      >
-                        Cancel Order
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+          {orders.map((order) => {
+            console.log('OrdersTable: Rendering order:', order.id, 'Customer:', order.customer_name);
+            
+            return (
+              <TableRow key={order.id}>
+                <TableCell className="font-medium">
+                  {order.id.slice(0, 8)}...
+                </TableCell>
+                <TableCell>
+                  <div>
+                    <p className="font-medium">{order.customer_name || 'Unknown Customer'}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {order.customer_email || 'No email'}
+                    </p>
+                    {order.shipping_address?.firstName && order.shipping_address?.lastName && (
+                      <p className="text-xs text-muted-foreground">
+                        {order.shipping_address.firstName} {order.shipping_address.lastName}
+                      </p>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {format(new Date(order.created_at), 'PP')}
+                </TableCell>
+                <TableCell>{getStatusBadge(order.status)}</TableCell>
+                <TableCell>₹{order.total.toLocaleString('en-IN')}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onViewOrder(order)}
+                    >
+                      <Eye className="h-4 w-4" />
+                      <span className="sr-only">View</span>
+                    </Button>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <ChevronDown className="h-4 w-4" />
+                          <span className="sr-only">Change Status</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem 
+                          onClick={() => onUpdateStatus(order.id, 'pending')}
+                          disabled={order.status === 'pending'}
+                        >
+                          Mark as Pending
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => onUpdateStatus(order.id, 'processing')}
+                          disabled={order.status === 'processing'}
+                        >
+                          Mark as Processing
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => onUpdateStatus(order.id, 'shipped')}
+                          disabled={order.status === 'shipped'}
+                        >
+                          Mark as Shipped
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => onUpdateStatus(order.id, 'completed')}
+                          disabled={order.status === 'completed'}
+                        >
+                          Mark as Completed
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => onUpdateStatus(order.id, 'cancelled')}
+                          disabled={order.status === 'cancelled'}
+                          className="text-red-600"
+                        >
+                          Cancel Order
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>

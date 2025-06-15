@@ -30,8 +30,8 @@ export const fetchOrders = async (): Promise<Order[]> => {
       return [];
     }
 
-    // Fetch orders directly with detailed logging
-    console.log('Fetching orders from database...');
+    // Fetch ALL orders from database without any user filtering
+    console.log('Fetching ALL orders from database...');
     const { data: orders, error } = await supabase
       .from('orders')
       .select(`
@@ -49,7 +49,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
     }
 
     console.log('Raw orders data from database:', orders);
-    console.log('Orders fetched:', orders?.length || 0);
+    console.log('Total orders fetched:', orders?.length || 0);
 
     if (!orders || orders.length === 0) {
       console.log('No orders found in database');
@@ -60,7 +60,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
     const userIds = [...new Set(orders.map(order => order.user_id))];
     console.log('Unique user IDs from orders:', userIds);
     
-    // Get user emails - fetch all users if no specific IDs
+    // Get user emails for all users who have orders
     let userEmails: Array<{id: string, email: string}> = [];
     try {
       console.log('Calling get_user_emails RPC function...');
@@ -82,11 +82,9 @@ export const fetchOrders = async (): Promise<Order[]> => {
       } else {
         userEmails = emailData || [];
         console.log('User emails fetched:', userEmails.length);
-        console.log('User emails data:', userEmails);
       }
     } catch (emailErr) {
       console.error('Failed to fetch user emails:', emailErr);
-      // Continue without emails
     }
 
     // Get profile data for customer names
@@ -101,7 +99,6 @@ export const fetchOrders = async (): Promise<Order[]> => {
     }
 
     console.log('Profiles for orders:', profiles?.length || 0);
-    console.log('Profiles data:', profiles);
 
     // Process orders with customer information
     const processedOrders = orders.map(order => {
@@ -109,11 +106,9 @@ export const fetchOrders = async (): Promise<Order[]> => {
       
       // Get customer email from RPC result
       const userEmail = userEmails?.find((u: any) => u.id === order.user_id);
-      console.log('Found user email for', order.user_id, ':', userEmail);
       
       // Get customer name from profiles
       const profile = profiles?.find(p => p.id === order.user_id);
-      console.log('Found profile for', order.user_id, ':', profile);
       
       const profileName = profile && profile.first_name && profile.last_name 
         ? `${profile.first_name} ${profile.last_name}`.trim()
@@ -131,7 +126,8 @@ export const fetchOrders = async (): Promise<Order[]> => {
       
       console.log('Final customer info for order', order.id, ':', {
         name: finalCustomerName,
-        email: finalCustomerEmail
+        email: finalCustomerEmail,
+        user_id: order.user_id
       });
 
       return {
@@ -141,11 +137,19 @@ export const fetchOrders = async (): Promise<Order[]> => {
       };
     });
 
-    console.log('Processed orders:', processedOrders.length);
-    console.log('Final processed orders:', processedOrders);
+    console.log('Final processed orders count:', processedOrders.length);
+    console.log('Final processed orders:', processedOrders.map(o => ({
+      id: o.id,
+      user_id: o.user_id,
+      customer_name: o.customer_name,
+      total: o.total,
+      status: o.status,
+      created_at: o.created_at
+    })));
+    
     return processedOrders;
   } catch (error) {
-    console.error('Error fetching orders:', error);
+    console.error('Error in fetchOrders:', error);
     return [];
   }
 };

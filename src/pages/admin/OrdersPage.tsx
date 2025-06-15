@@ -37,6 +37,11 @@ const OrdersPage = () => {
       const ordersData = await fetchOrders();
       console.log('OrdersPage: Orders received from API:', ordersData);
       console.log('OrdersPage: Number of orders:', ordersData.length);
+      
+      if (ordersData.length === 0) {
+        console.warn('OrdersPage: No orders returned from fetchOrders');
+      }
+      
       setOrders(ordersData);
     } catch (error) {
       console.error('OrdersPage: Error loading orders:', error);
@@ -82,7 +87,10 @@ const OrdersPage = () => {
     return (
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center h-64">
-          <div className="text-center">Loading orders...</div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+            <div>Loading orders...</div>
+          </div>
         </div>
       </div>
     );
@@ -93,13 +101,21 @@ const OrdersPage = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold">Orders Management</h1>
-          <p className="text-muted-foreground">View and manage customer orders ({orders.length} total)</p>
+          <p className="text-muted-foreground">View and manage all customer orders ({orders.length} total)</p>
         </div>
+        <Button onClick={loadOrders} variant="outline">
+          Refresh Orders
+        </Button>
       </div>
       
       <Card>
         <CardHeader className="pb-2">
           <CardTitle>Order List</CardTitle>
+          {orders.length === 0 && !loading && (
+            <p className="text-sm text-muted-foreground">
+              No orders found. This could mean no orders have been placed yet, or there might be an issue with data fetching.
+            </p>
+          )}
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4 mb-4">
@@ -148,7 +164,10 @@ const OrdersPage = () => {
           
           {orders.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">No orders found</p>
+              <p className="text-muted-foreground">No orders found in the database</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Orders will appear here once customers make purchases
+              </p>
             </div>
           ) : (
             <>
