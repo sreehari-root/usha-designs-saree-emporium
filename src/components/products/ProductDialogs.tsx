@@ -63,35 +63,23 @@ const ProductDialogs = ({
             Add Product
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Product</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <ProductForm
-                product={newProduct}
-                imageFile={imageFile}
-                imagePreview={imagePreview}
-                categories={categories}
-                isLoading={isLoading}
-                onSubmit={onAddProduct}
-                onInputChange={onInputChange}
-                onCategoryChange={onCategoryChange}
-                onSwitchChange={onSwitchChange}
-                onImageChange={onImageChange}
-                onCancel={() => setIsAddDialogOpen(false)}
-              />
-            </div>
-            <div>
-              <ProductImageManager
-                productId={newProduct.id || 'new'}
-                images={productImages}
-                onImagesChange={onProductImagesChange}
-                isLoading={isLoading}
-              />
-            </div>
-          </div>
+          <ProductForm
+            product={newProduct}
+            imageFile={imageFile}
+            imagePreview={imagePreview}
+            categories={categories}
+            isLoading={isLoading}
+            onSubmit={onAddProduct}
+            onInputChange={onInputChange}
+            onCategoryChange={onCategoryChange}
+            onSwitchChange={onSwitchChange}
+            onImageChange={onImageChange}
+            onCancel={() => setIsAddDialogOpen(false)}
+          />
         </DialogContent>
       </Dialog>
 

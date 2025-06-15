@@ -1,5 +1,5 @@
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef } from 'react';
 import { Upload, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,8 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { CategoryType } from '@/lib/api/categories';
 import { ProductType } from '@/lib/api/products';
-import { fetchProductImages, ProductImageType } from '@/lib/api/productImages';
-import ProductImageManager from './ProductImageManager';
 
 interface ProductFormProps {
   product: Partial<ProductType>;
@@ -42,17 +40,6 @@ const ProductForm = ({
   onCancel
 }: ProductFormProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [productImages, setProductImages] = useState<ProductImageType[]>([]);
-
-  useEffect(() => {
-    if (isEdit && product.id) {
-      const loadProductImages = async () => {
-        const images = await fetchProductImages(product.id!);
-        setProductImages(images);
-      };
-      loadProductImages();
-    }
-  }, [isEdit, product.id]);
 
   return (
     <form onSubmit={onSubmit} className="space-y-4 py-4">
@@ -129,45 +116,41 @@ const ProductForm = ({
         />
       </div>
       
-      {/* Product Images Section */}
-      {isEdit && product.id ? (
-        <ProductImageManager
-          productId={product.id}
-          images={productImages}
-          onImagesChange={setProductImages}
-          isLoading={isLoading}
-        />
-      ) : (
-        <div className="space-y-2">
-          <Label>Product Image</Label>
-          <div className="flex items-center space-x-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Image
-            </Button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              accept="image/*"
-              onChange={onImageChange}
-            />
-            {imagePreview && (
-              <div className="relative h-16 w-16 rounded-md overflow-hidden">
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            )}
-          </div>
+      {/* Product Image Section - Always show for both add and edit */}
+      <div className="space-y-2">
+        <Label>Product Image</Label>
+        <div className="flex items-center space-x-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Upload Image
+          </Button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept="image/*"
+            onChange={onImageChange}
+          />
+          {(imagePreview || product.image) && (
+            <div className="relative h-16 w-16 rounded-md overflow-hidden">
+              <img
+                src={imagePreview || product.image || ''}
+                alt="Preview"
+                className="h-full w-full object-cover"
+              />
+            </div>
+          )}
         </div>
-      )}
+        {isEdit && (
+          <p className="text-sm text-muted-foreground">
+            Note: Additional product images can be managed in the "Product Images" section on the right.
+          </p>
+        )}
+      </div>
       
       <div className="space-y-2">
         <Label htmlFor={isEdit ? "edit-description" : "description"}>Description</Label>
