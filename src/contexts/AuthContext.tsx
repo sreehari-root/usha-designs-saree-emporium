@@ -36,15 +36,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Handle password recovery flow
-        if (event === 'PASSWORD_RECOVERY') {
-          // Redirect to deployed URL for password reset
-          const deployedUrl = 'https://usha-designs-saree-emporium.lovable.app/auth?reset=true';
-          if (window.location.origin === 'http://localhost:3000') {
-            window.location.href = deployedUrl;
-            return;
-          }
-        }
+        // Don't auto-redirect for PASSWORD_RECOVERY events
+        // Let the Auth component handle the password reset flow
         
         // Defer any additional Supabase operations to avoid deadlock
         if (session?.user) {
