@@ -22,16 +22,25 @@ const Account = () => {
   useEffect(() => {
     if (user) {
       loadUserOrders();
+    } else {
+      setLoading(false);
     }
   }, [user]);
 
   const loadUserOrders = async () => {
     if (!user) return;
     
+    console.log('Loading orders for user:', user.id);
     setLoading(true);
-    const userOrders = await fetchUserOrders(user.id);
-    setOrders(userOrders);
-    setLoading(false);
+    try {
+      const userOrders = await fetchUserOrders(user.id);
+      console.log('User orders loaded:', userOrders);
+      setOrders(userOrders);
+    } catch (error) {
+      console.error('Error loading user orders:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const viewOrder = (order: Order) => {
@@ -106,7 +115,7 @@ const Account = () => {
                   </TabsTrigger>
                   <TabsTrigger value="orders" className="flex items-center gap-2">
                     <Package className="w-4 h-4" />
-                    My Orders
+                    My Orders ({orders.length})
                   </TabsTrigger>
                   <TabsTrigger value="wishlist" className="flex items-center gap-2">
                     <Heart className="w-4 h-4" />

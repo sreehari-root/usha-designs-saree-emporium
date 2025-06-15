@@ -37,18 +37,24 @@ export const fetchReviews = async (): Promise<Review[]> => {
         .in('id', userIds);
 
       // Map profile data to reviews with proper type casting
-      const mappedReviews = reviews.map(review => ({
-        ...review,
-        status: (review.status as string || 'pending') as 'pending' | 'approved' | 'rejected',
+      const mappedReviews: Review[] = reviews.map(review => ({
+        id: review.id,
+        user_id: review.user_id,
+        product_id: review.product_id,
+        rating: review.rating,
+        comment: review.comment,
+        created_at: review.created_at,
+        status: (review.status || 'pending') as 'pending' | 'approved' | 'rejected',
+        products: review.products,
         customer_name: profiles?.find(p => p.id === review.user_id) 
           ? `${profiles.find(p => p.id === review.user_id)?.first_name || ''} ${profiles.find(p => p.id === review.user_id)?.last_name || ''}`.trim()
           : 'Anonymous User'
       }));
       
-      return mappedReviews as Review[];
+      return mappedReviews;
     }
 
-    return reviews || [];
+    return [];
   } catch (error) {
     console.error('Error fetching reviews:', error);
     return [];
@@ -82,18 +88,24 @@ export const fetchApprovedReviews = async (productId?: string): Promise<Review[]
         .select('id, first_name, last_name')
         .in('id', userIds);
 
-      const mappedReviews = reviews.map(review => ({
-        ...review,
-        status: (review.status as string || 'approved') as 'pending' | 'approved' | 'rejected',
+      const mappedReviews: Review[] = reviews.map(review => ({
+        id: review.id,
+        user_id: review.user_id,
+        product_id: review.product_id,
+        rating: review.rating,
+        comment: review.comment,
+        created_at: review.created_at,
+        status: (review.status || 'approved') as 'pending' | 'approved' | 'rejected',
+        products: review.products,
         customer_name: profiles?.find(p => p.id === review.user_id) 
           ? `${profiles.find(p => p.id === review.user_id)?.first_name || ''} ${profiles.find(p => p.id === review.user_id)?.last_name || ''}`.trim()
           : 'Anonymous User'
       }));
       
-      return mappedReviews as Review[];
+      return mappedReviews;
     }
 
-    return reviews || [];
+    return [];
   } catch (error) {
     console.error('Error fetching approved reviews:', error);
     return [];

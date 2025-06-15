@@ -79,19 +79,44 @@ export default function ProfileForm() {
       console.log('Saving profile for user:', user.id);
       console.log('Profile data:', profileData);
 
-      const { error } = await supabase
+      // First, check if profile exists
+      const { data: existingProfile } = await supabase
         .from('profiles')
-        .upsert({
-          id: user.id,
-          ...profileData,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'id'
-        });
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
 
-      if (error) {
-        console.error('Error saving profile:', error);
-        throw error;
+      let result;
+      if (existingProfile) {
+        // Update existing profile
+        result = await supabase
+          .from('profiles')
+          .update({
+            first_name: profileData.first_name,
+            last_name: profileData.last_name,
+            phone: profileData.phone,
+            address: profileData.address,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+      } else {
+        // Insert new profile
+        result = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            first_name: profileData.first_name,
+            last_name: profileData.last_name,
+            phone: profileData.phone,
+            address: profileData.address,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+      }
+
+      if (result.error) {
+        console.error('Error saving profile:', result.error);
+        throw result.error;
       }
 
       console.log('Profile saved successfully');
