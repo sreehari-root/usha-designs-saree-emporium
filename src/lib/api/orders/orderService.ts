@@ -13,6 +13,8 @@ export const fetchOrders = async (): Promise<Order[]> => {
       return [];
     }
 
+    console.log('Current user:', user.id);
+
     // Verify admin status
     const { data: isAdminData, error: adminError } = await supabase
       .rpc('is_admin');
@@ -21,6 +23,8 @@ export const fetchOrders = async (): Promise<Order[]> => {
       console.error('Error checking admin status:', adminError);
       return [];
     }
+
+    console.log('Is admin check result:', isAdminData);
 
     if (!isAdminData) {
       console.error('User is not admin');
@@ -65,6 +69,14 @@ export const fetchOrders = async (): Promise<Order[]> => {
 
     console.log('Profiles for orders:', profiles?.length || 0);
 
+    // Get actual email addresses from auth.users via RPC function
+    const { data: userEmails, error: emailError } = await supabase
+      .rpc('get_user_emails', { user_ids: userIds });
+
+    if (emailError) {
+      console.error('Error fetching user emails:', emailError);
+    }
+
     return orders.map(order => {
       // Get customer name from profiles
       const profile = profiles?.find(p => p.id === order.user_id);
@@ -78,10 +90,13 @@ export const fetchOrders = async (): Promise<Order[]> => {
         ? `${shippingAddr.firstName} ${shippingAddr.lastName}`.trim()
         : null;
 
+      // Get email from RPC result
+      const userEmail = userEmails?.find((u: any) => u.id === order.user_id);
+
       return {
         ...order,
         customer_name: profileName || shippingName || 'Unknown Customer',
-        customer_email: profile ? `${profile.first_name || 'customer'}@example.com` : 'customer@example.com'
+        customer_email: userEmail?.email || 'customer@example.com'
       };
     });
   } catch (error) {

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -39,7 +40,7 @@ export const fetchReviews = async (): Promise<Review[]> => {
       // Map profile data to reviews with proper type casting
       return reviews.map(review => ({
         ...review,
-        status: review.status as 'pending' | 'approved' | 'rejected',
+        status: (review.status || 'pending') as 'pending' | 'approved' | 'rejected',
         customer_name: profiles?.find(p => p.id === review.user_id) 
           ? `${profiles.find(p => p.id === review.user_id)?.first_name || ''} ${profiles.find(p => p.id === review.user_id)?.last_name || ''}`.trim()
           : 'Anonymous User'
@@ -82,7 +83,7 @@ export const fetchApprovedReviews = async (productId?: string): Promise<Review[]
 
       return reviews.map(review => ({
         ...review,
-        status: review.status as 'pending' | 'approved' | 'rejected',
+        status: (review.status || 'approved') as 'pending' | 'approved' | 'rejected',
         customer_name: profiles?.find(p => p.id === review.user_id) 
           ? `${profiles.find(p => p.id === review.user_id)?.first_name || ''} ${profiles.find(p => p.id === review.user_id)?.last_name || ''}`.trim()
           : 'Anonymous User'

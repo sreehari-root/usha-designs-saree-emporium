@@ -27,6 +27,8 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       return [];
     }
 
+    console.log('Current user:', user.id);
+
     // Verify admin status
     const { data: isAdminData, error: adminError } = await supabase
       .rpc('is_admin');
@@ -35,6 +37,8 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       console.error('Error checking admin status:', adminError);
       return [];
     }
+
+    console.log('Is admin check result:', isAdminData);
 
     if (!isAdminData) {
       console.error('User is not admin');
@@ -54,6 +58,7 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
     console.log('Profiles fetched:', profiles?.length || 0);
 
     if (!profiles || profiles.length === 0) {
+      console.log('No profiles found');
       return [];
     }
 
@@ -92,6 +97,14 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       });
     }
 
+    // Get actual email addresses from auth.users via RPC function
+    const { data: userEmails, error: emailError } = await supabase
+      .rpc('get_user_emails', { user_ids: profiles.map(p => p.id) });
+
+    if (emailError) {
+      console.error('Error fetching user emails:', emailError);
+    }
+
     // Combine the data
     const customers = profiles.map(profile => {
       const stats = customerStats.get(profile.id) || {
@@ -100,9 +113,12 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
         last_order_date: null
       };
       
+      // Find email from RPC result or use placeholder
+      const userEmail = userEmails?.find((u: any) => u.id === profile.id);
+      
       return {
         ...profile,
-        email: `${profile.first_name || 'customer'}@example.com`, // Placeholder since we can't access auth.users directly
+        email: userEmail?.email || `${profile.first_name || 'user'}@example.com`,
         orders_count: stats.orders_count,
         total_spent: stats.total_spent,
         last_order_date: stats.last_order_date
