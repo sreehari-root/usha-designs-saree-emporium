@@ -1,13 +1,20 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Heart, Search, ShoppingCart, User, Menu, X } from 'lucide-react';
+import { Heart, Search, ShoppingCart, User, Menu, X, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchCategories } from '@/lib/api/categories';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -15,6 +22,12 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSigningOut, setIsSigningOut] = useState(false);
+
+  // Fetch categories for dropdown
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: fetchCategories,
+  });
 
   // Get cart count
   const { data: cartCount = 0 } = useQuery({
@@ -99,12 +112,33 @@ const Navbar = () => {
             <Link to="/new-arrivals" className="text-gray-700 hover:text-usha-burgundy transition-colors">
               New Arrivals
             </Link>
-            <Link to="/category/sarees" className="text-gray-700 hover:text-usha-burgundy transition-colors">
-              Sarees
-            </Link>
-            <Link to="/category/lehengas" className="text-gray-700 hover:text-usha-burgundy transition-colors">
-              Lehengas
-            </Link>
+            
+            {/* Categories Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-gray-700 hover:text-usha-burgundy transition-colors p-0 h-auto font-normal">
+                  Categories
+                  <ChevronDown className="ml-1 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-white border shadow-lg z-50">
+                {categories.map((category) => (
+                  <DropdownMenuItem key={category.id} asChild>
+                    <Link 
+                      to={`/category/${category.name.toLowerCase()}`}
+                      className="w-full text-gray-700 hover:text-usha-burgundy hover:bg-gray-50 transition-colors"
+                    >
+                      {category.name}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+                {categories.length === 0 && (
+                  <DropdownMenuItem disabled>
+                    No categories available
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Search Bar */}
@@ -217,12 +251,20 @@ const Navbar = () => {
               <Link to="/new-arrivals" className="text-gray-700 hover:text-usha-burgundy transition-colors">
                 New Arrivals
               </Link>
-              <Link to="/category/sarees" className="text-gray-700 hover:text-usha-burgundy transition-colors">
-                Sarees
-              </Link>
-              <Link to="/category/lehengas" className="text-gray-700 hover:text-usha-burgundy transition-colors">
-                Lehengas
-              </Link>
+              
+              {/* Mobile Categories */}
+              <div className="space-y-2">
+                <span className="text-gray-500 text-sm font-medium">Categories:</span>
+                {categories.map((category) => (
+                  <Link 
+                    key={category.id}
+                    to={`/category/${category.name.toLowerCase()}`}
+                    className="block pl-4 text-gray-700 hover:text-usha-burgundy transition-colors"
+                  >
+                    {category.name}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         )}
