@@ -18,6 +18,15 @@ const WishlistPage = lazy(() => import('@/pages/WishlistPage'));
 const Auth = lazy(() => import('@/pages/Auth'));
 const Account = lazy(() => import('@/pages/Account'));
 const Checkout = lazy(() => import('@/pages/Checkout'));
+
+// Static pages
+const About = lazy(() => import('@/pages/About'));
+const Contact = lazy(() => import('@/pages/Contact'));
+const Shipping = lazy(() => import('@/pages/Shipping'));
+const Returns = lazy(() => import('@/pages/Returns'));
+const FAQ = lazy(() => import('@/pages/FAQ'));
+
+// Admin pages
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const AdminProductsPage = lazy(() => import('@/pages/admin/ProductsPage'));
 const AdminOrdersPage = lazy(() => import('@/pages/admin/OrdersPage'));
@@ -60,6 +69,13 @@ function App() {
                   <Route path="/new-arrivals" element={<MainLayout><NewArrivals /></MainLayout>} />
                   <Route path="/cart" element={<MainLayout><Cart /></MainLayout>} />
                   <Route path="/auth" element={<MainLayout><Auth /></MainLayout>} />
+                  
+                  {/* Static pages */}
+                  <Route path="/about" element={<MainLayout><About /></MainLayout>} />
+                  <Route path="/contact" element={<MainLayout><Contact /></MainLayout>} />
+                  <Route path="/shipping" element={<MainLayout><Shipping /></MainLayout>} />
+                  <Route path="/returns" element={<MainLayout><Returns /></MainLayout>} />
+                  <Route path="/faq" element={<MainLayout><FAQ /></MainLayout>} />
                   
                   {/* Protected routes */}
                   <Route path="/wishlist" element={<MainLayout requireAuth><WishlistPage /></MainLayout>} />
