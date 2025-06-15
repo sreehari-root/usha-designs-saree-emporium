@@ -80,7 +80,7 @@ const ProductDialogs = ({
                 onCategoryChange={onCategoryChange}
                 onSwitchChange={onSwitchChange}
                 onImageChange={onImageChange}
-                submitLabel="Add Product"
+                onCancel={() => setIsAddDialogOpen(false)}
               />
             </div>
             <div>
@@ -109,12 +109,13 @@ const ProductDialogs = ({
                   imagePreview={editImagePreview}
                   categories={categories}
                   isLoading={isLoading}
+                  isEdit={true}
                   onSubmit={onUpdateProduct}
                   onInputChange={onInputChange}
                   onCategoryChange={onCategoryChange}
                   onSwitchChange={onSwitchChange}
                   onImageChange={onImageChange}
-                  submitLabel="Update Product"
+                  onCancel={() => setIsEditDialogOpen(false)}
                 />
               </div>
               <div>

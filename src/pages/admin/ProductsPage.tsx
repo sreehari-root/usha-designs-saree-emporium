@@ -57,7 +57,7 @@ const ProductsPage = () => {
           setIsEditDialogOpen={setIsEditDialogOpen}
           selectedProduct={selectedProduct}
           editImageFile={editImageFile}
-          editImagePreview={editEditImagePreview}
+          editImagePreview={editImagePreview}
           categories={categories}
           isLoading={isLoading}
           onAddProduct={handleAddProduct}
