@@ -56,7 +56,7 @@ export default function ProfileForm() {
           address: data.address || ''
         });
       } else {
-        console.log('No profile found, will create new one');
+        console.log('No profile found, will create new one on save');
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -79,44 +79,23 @@ export default function ProfileForm() {
       console.log('Saving profile for user:', user.id);
       console.log('Profile data:', profileData);
 
-      // First, check if profile exists
-      const { data: existingProfile } = await supabase
+      // Use upsert to handle both insert and update cases
+      const { error } = await supabase
         .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .maybeSingle();
+        .upsert({
+          id: user.id,
+          first_name: profileData.first_name,
+          last_name: profileData.last_name,
+          phone: profileData.phone,
+          address: profileData.address,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id'
+        });
 
-      let result;
-      if (existingProfile) {
-        // Update existing profile
-        result = await supabase
-          .from('profiles')
-          .update({
-            first_name: profileData.first_name,
-            last_name: profileData.last_name,
-            phone: profileData.phone,
-            address: profileData.address,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', user.id);
-      } else {
-        // Insert new profile
-        result = await supabase
-          .from('profiles')
-          .insert({
-            id: user.id,
-            first_name: profileData.first_name,
-            last_name: profileData.last_name,
-            phone: profileData.phone,
-            address: profileData.address,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-      }
-
-      if (result.error) {
-        console.error('Error saving profile:', result.error);
-        throw result.error;
+      if (error) {
+        console.error('Error saving profile:', error);
+        throw error;
       }
 
       console.log('Profile saved successfully');

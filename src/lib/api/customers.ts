@@ -43,28 +43,43 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       console.error('User is not admin');
       return [];
     }
+
+    // First, get all user IDs from auth.users via RPC
+    const { data: allUserEmails, error: emailError } = await supabase
+      .rpc('get_user_emails', { user_ids: [] }) as { data: Array<{id: string, email: string}> | null, error: any };
+
+    if (emailError) {
+      console.error('Error fetching all user emails:', emailError);
+      return [];
+    }
+
+    console.log('All user emails fetched:', allUserEmails?.length || 0);
+
+    if (!allUserEmails || allUserEmails.length === 0) {
+      console.log('No users found in auth.users');
+      return [];
+    }
+
+    // Get user IDs to fetch profiles for
+    const userIds = allUserEmails.map(u => u.id);
     
-    // Get all profiles first
+    // Get profiles for these users (some may not have profiles yet)
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('*');
+      .select('*')
+      .in('id', userIds);
 
     if (profilesError) {
       console.error('Error fetching profiles:', profilesError);
-      throw profilesError;
     }
 
     console.log('Profiles fetched:', profiles?.length || 0);
 
-    if (!profiles || profiles.length === 0) {
-      console.log('No profiles found');
-      return [];
-    }
-
     // Get orders information for each user
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
-      .select('user_id, total, created_at');
+      .select('user_id, total, created_at')
+      .in('user_id', userIds);
 
     if (ordersError) {
       console.error('Error fetching orders for customers:', ordersError);
@@ -96,28 +111,24 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       });
     }
 
-    // Get actual email addresses from auth.users via RPC function
-    const { data: userEmails, error: emailError } = await supabase
-      .rpc('get_user_emails', { user_ids: profiles.map(p => p.id) }) as { data: Array<{id: string, email: string}> | null, error: any };
-
-    if (emailError) {
-      console.error('Error fetching user emails:', emailError);
-    }
-
-    // Combine the data
-    const customers = profiles.map(profile => {
-      const stats = customerStats.get(profile.id) || {
+    // Combine the data - create customers for all authenticated users
+    const customers = allUserEmails.map(userEmail => {
+      const profile = profiles?.find(p => p.id === userEmail.id);
+      const stats = customerStats.get(userEmail.id) || {
         orders_count: 0,
         total_spent: 0,
         last_order_date: null
       };
       
-      // Find email from RPC result or use placeholder
-      const userEmail = userEmails?.find((u: any) => u.id === profile.id);
-      
       return {
-        ...profile,
-        email: userEmail?.email || `${profile.first_name || 'user'}@example.com`,
+        id: userEmail.id,
+        email: userEmail.email,
+        first_name: profile?.first_name || null,
+        last_name: profile?.last_name || null,
+        phone: profile?.phone || null,
+        address: profile?.address || null,
+        created_at: profile?.created_at || new Date().toISOString(),
+        updated_at: profile?.updated_at || new Date().toISOString(),
         orders_count: stats.orders_count,
         total_spent: stats.total_spent,
         last_order_date: stats.last_order_date

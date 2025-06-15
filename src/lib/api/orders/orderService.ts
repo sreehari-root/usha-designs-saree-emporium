@@ -53,10 +53,21 @@ export const fetchOrders = async (): Promise<Order[]> => {
       return [];
     }
 
-    // Get profile data for customer names
+    // Get all user IDs from orders
     const userIds = [...new Set(orders.map(order => order.user_id))];
-    console.log('Fetching profiles for user IDs:', userIds);
+    console.log('Fetching data for user IDs:', userIds);
     
+    // Get all user emails from auth.users
+    const { data: userEmails, error: emailError } = await supabase
+      .rpc('get_user_emails', { user_ids: userIds }) as { data: Array<{id: string, email: string}> | null, error: any };
+
+    if (emailError) {
+      console.error('Error fetching user emails:', emailError);
+    }
+
+    console.log('User emails fetched:', userEmails?.length || 0);
+
+    // Get profile data for customer names
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('id, first_name, last_name')
@@ -68,15 +79,10 @@ export const fetchOrders = async (): Promise<Order[]> => {
 
     console.log('Profiles for orders:', profiles?.length || 0);
 
-    // Get actual email addresses from auth.users via RPC function
-    const { data: userEmails, error: emailError } = await supabase
-      .rpc('get_user_emails', { user_ids: userIds }) as { data: Array<{id: string, email: string}> | null, error: any };
-
-    if (emailError) {
-      console.error('Error fetching user emails:', emailError);
-    }
-
     return orders.map(order => {
+      // Get customer email from RPC result
+      const userEmail = userEmails?.find((u: any) => u.id === order.user_id);
+      
       // Get customer name from profiles
       const profile = profiles?.find(p => p.id === order.user_id);
       const profileName = profile && profile.first_name && profile.last_name 
@@ -89,13 +95,13 @@ export const fetchOrders = async (): Promise<Order[]> => {
         ? `${shippingAddr.firstName} ${shippingAddr.lastName}`.trim()
         : null;
 
-      // Get email from RPC result
-      const userEmail = userEmails?.find((u: any) => u.id === order.user_id);
+      // Use email as final fallback for customer name
+      const finalCustomerName = profileName || shippingName || userEmail?.email || 'Unknown Customer';
 
       return {
         ...order,
-        customer_name: profileName || shippingName || 'Unknown Customer',
-        customer_email: userEmail?.email || 'customer@example.com'
+        customer_name: finalCustomerName,
+        customer_email: userEmail?.email || 'unknown@example.com'
       };
     });
   } catch (error) {
