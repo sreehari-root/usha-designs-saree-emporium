@@ -30,7 +30,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
       return [];
     }
 
-    // Fetch orders using service role bypass for admin
+    // Fetch orders directly - the RPC function issue should be resolved now
     const { data: orders, error } = await supabase
       .from('orders')
       .select(`
@@ -58,15 +58,21 @@ export const fetchOrders = async (): Promise<Order[]> => {
     const userIds = [...new Set(orders.map(order => order.user_id))];
     console.log('Fetching data for user IDs:', userIds);
     
-    // Get all user emails from auth.users using the updated RPC function
-    const { data: userEmails, error: emailError } = await supabase
-      .rpc('get_user_emails', { user_ids: userIds }) as { data: Array<{id: string, email: string}> | null, error: any };
+    // Get user emails using the fixed RPC function
+    let userEmails: Array<{id: string, email: string}> = [];
+    try {
+      const { data: emailData, error: emailError } = await supabase
+        .rpc('get_user_emails', { user_ids: userIds });
 
-    if (emailError) {
-      console.error('Error fetching user emails:', emailError);
+      if (emailError) {
+        console.error('Error fetching user emails:', emailError);
+      } else {
+        userEmails = emailData || [];
+        console.log('User emails fetched:', userEmails.length);
+      }
+    } catch (emailErr) {
+      console.error('Failed to fetch user emails:', emailErr);
     }
-
-    console.log('User emails fetched:', userEmails?.length || 0);
 
     // Get profile data for customer names
     const { data: profiles, error: profilesError } = await supabase

@@ -43,18 +43,25 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       return [];
     }
 
-    // Get all user emails - use empty array to trigger the "get all users" logic
-    const { data: allUserEmails, error: emailError } = await supabase
-      .rpc('get_user_emails', { user_ids: [] }) as { data: Array<{id: string, email: string}> | null, error: any };
+    // Get all user emails using the fixed RPC function
+    let allUserEmails: Array<{id: string, email: string}> = [];
+    try {
+      const { data: emailData, error: emailError } = await supabase
+        .rpc('get_user_emails', { user_ids: [] });
 
-    if (emailError) {
-      console.error('Error fetching all user emails:', emailError);
+      if (emailError) {
+        console.error('Error fetching all user emails:', emailError);
+        return [];
+      }
+
+      allUserEmails = emailData || [];
+      console.log('All user emails fetched:', allUserEmails.length);
+    } catch (error) {
+      console.error('Failed to fetch user emails:', error);
       return [];
     }
 
-    console.log('All user emails fetched:', allUserEmails?.length || 0);
-
-    if (!allUserEmails || allUserEmails.length === 0) {
+    if (allUserEmails.length === 0) {
       console.log('No users found in auth.users');
       return [];
     }

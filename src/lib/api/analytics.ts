@@ -44,12 +44,33 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
     const totalRevenue = orders?.reduce((sum, order) => sum + order.total, 0) || 0;
     const pendingOrders = orders?.filter(order => order.status === 'pending').length || 0;
 
-    // Get total customers (unique user profiles)
-    const { count: totalCustomers, error: customersError } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true });
+    // Get total customers using the fixed RPC function
+    let totalCustomers = 0;
+    try {
+      const { data: allUsers, error: customersError } = await supabase
+        .rpc('get_user_emails', { user_ids: [] });
 
-    if (customersError) throw customersError;
+      if (customersError) {
+        console.error('Error fetching user count:', customersError);
+        // Fallback to profiles count
+        const { count: profileCount, error: profileError } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
+        
+        if (!profileError) {
+          totalCustomers = profileCount || 0;
+        }
+      } else {
+        totalCustomers = allUsers?.length || 0;
+      }
+    } catch (error) {
+      console.error('Error getting customer count:', error);
+      // Final fallback to profiles
+      const { count: profileCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+      totalCustomers = profileCount || 0;
+    }
 
     // Get total products
     const { count: totalProducts, error: productsError } = await supabase
@@ -77,10 +98,20 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
 
     if (reviewsError) throw reviewsError;
 
+    console.log('Dashboard stats:', {
+      totalOrders,
+      totalRevenue,
+      totalCustomers,
+      totalProducts: totalProducts || 0,
+      pendingOrders,
+      lowStockProducts: lowStockProducts || 0,
+      recentReviews: recentReviews || 0,
+    });
+
     return {
       totalOrders,
       totalRevenue,
-      totalCustomers: totalCustomers || 0,
+      totalCustomers,
       totalProducts: totalProducts || 0,
       pendingOrders,
       lowStockProducts: lowStockProducts || 0,
