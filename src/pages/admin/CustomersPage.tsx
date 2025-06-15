@@ -119,7 +119,7 @@ const CustomersPage = () => {
                           >
                             {pageNumber}
                           </PaginationLink>
-                        </Pagination Item>
+                        </PaginationItem>
                       );
                     })}
                     <PaginationItem>
