@@ -28,6 +28,7 @@ const ProductsPage = () => {
     editImageFile,
     editImagePreview,
     productsPerPage,
+    productImages,
     handleEdit,
     handleDelete,
     handleAddProduct,
@@ -36,6 +37,7 @@ const ProductsPage = () => {
     handleSwitchChange,
     handleCategoryChange,
     handleImageChange,
+    onProductImagesChange,
   } = useProductManagement();
 
   return (
@@ -55,7 +57,7 @@ const ProductsPage = () => {
           setIsEditDialogOpen={setIsEditDialogOpen}
           selectedProduct={selectedProduct}
           editImageFile={editImageFile}
-          editImagePreview={editImagePreview}
+          editImagePreview={editEditImagePreview}
           categories={categories}
           isLoading={isLoading}
           onAddProduct={handleAddProduct}
@@ -64,6 +66,8 @@ const ProductsPage = () => {
           onCategoryChange={handleCategoryChange}
           onSwitchChange={handleSwitchChange}
           onImageChange={handleImageChange}
+          productImages={productImages}
+          onProductImagesChange={onProductImagesChange}
         />
       </div>
       

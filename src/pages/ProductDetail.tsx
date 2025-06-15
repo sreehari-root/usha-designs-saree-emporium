@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchProductImages, ProductImageType } from '@/lib/api/productImages';
 import MainLayout from '@/components/layout/MainLayout';
+import ProductImageCarousel from '@/components/products/ProductImageCarousel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,16 +21,16 @@ type Product = {
   description: string;
   price: number;
   discount: number;
-  category?: string; // Make this optional
-  category_id?: string; // Add category_id as an optional field
+  category?: string;
+  category_id?: string;
   image: string | null;
   stock: number;
   rating: number;
   bestseller: boolean;
   featured: boolean;
-  created_at?: string; // Add this as optional
-  updated_at?: string; // Add this as optional
-  sales_count?: number; // Add this as optional
+  created_at?: string;
+  updated_at?: string;
+  sales_count?: number;
 };
 
 type ReviewProfile = {
@@ -53,6 +55,7 @@ export default function ProductDetail() {
   const { toast } = useToast();
   
   const [product, setProduct] = useState<Product | null>(null);
+  const [productImages, setProductImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -89,6 +92,17 @@ export default function ProductDetail() {
         return;
       }
       
+      // Fetch product images
+      const images = await fetchProductImages(id);
+      const imageUrls = images.map(img => img.image_url);
+      
+      // If no images in product_images table, use the main image from products table
+      if (imageUrls.length === 0 && productData.image) {
+        setProductImages([productData.image]);
+      } else {
+        setProductImages(imageUrls);
+      }
+      
       // Fetch category name if category_id exists
       if (productData && productData.category_id) {
         const { data: categoryData, error: categoryError } = await supabase
@@ -100,7 +114,6 @@ export default function ProductDetail() {
         if (!categoryError && categoryData) {
           setCategoryName(categoryData.name);
           
-          // Create a complete product object with both database fields and derived fields
           const completeProduct: Product = {
             ...productData,
             category: categoryData.name
@@ -108,11 +121,9 @@ export default function ProductDetail() {
           
           setProduct(completeProduct);
         } else {
-          // If category fetch fails, still set the product but without category
           setProduct(productData as Product);
         }
       } else {
-        // If no category_id, just set the product
         setProduct(productData as Product);
       }
     } catch (error) {
@@ -144,7 +155,6 @@ export default function ProductDetail() {
       if (error) {
         console.error('Error fetching reviews:', error);
       } else {
-        // Safely create reviews with consistent profile structure
         const processedReviews: Review[] = (data || []).map(review => ({
           id: review.id,
           user_id: review.user_id,
@@ -232,7 +242,6 @@ export default function ProductDetail() {
         description: "Thank you for your feedback!"
       });
       
-      // Reset form and refresh reviews
       setUserReview({ rating: 5, comment: '' });
       fetchReviews();
     }
@@ -256,10 +265,8 @@ export default function ProductDetail() {
     setAddingToCart(true);
 
     try {
-      // First, get or create a cart for the user
       let cartId;
       
-      // Check if the user already has a cart
       const { data: existingCarts, error: cartError } = await supabase
         .from('carts')
         .select('id')
@@ -273,7 +280,6 @@ export default function ProductDetail() {
       if (existingCarts) {
         cartId = existingCarts.id;
       } else {
-        // Create a new cart
         const { data: newCart, error: createCartError } = await supabase
           .from('carts')
           .insert({ user_id: user.id })
@@ -287,7 +293,6 @@ export default function ProductDetail() {
         cartId = newCart.id;
       }
       
-      // Now check if the product is already in the cart
       const { data: existingItems, error: itemError } = await supabase
         .from('cart_items')
         .select('id, quantity')
@@ -300,7 +305,6 @@ export default function ProductDetail() {
       }
       
       if (existingItems) {
-        // Update existing cart item quantity
         const { error: updateError } = await supabase
           .from('cart_items')
           .update({ quantity: existingItems.quantity + quantity })
@@ -310,7 +314,6 @@ export default function ProductDetail() {
           throw new Error('Error updating cart item');
         }
       } else {
-        // Add new item to cart
         const { error: insertError } = await supabase
           .from('cart_items')
           .insert({
@@ -356,7 +359,6 @@ export default function ProductDetail() {
     setAddingToWishlist(true);
 
     try {
-      // Check if the item is already in the wishlist
       const { data: existingItem, error: checkError } = await supabase
         .from('wishlists')
         .select('id')
@@ -369,7 +371,6 @@ export default function ProductDetail() {
       }
       
       if (existingItem) {
-        // Item already in wishlist, remove it
         const { error: deleteError } = await supabase
           .from('wishlists')
           .delete()
@@ -384,7 +385,6 @@ export default function ProductDetail() {
           description: `${product.name} removed from your wishlist`
         });
       } else {
-        // Add to wishlist
         const { error: insertError } = await supabase
           .from('wishlists')
           .insert({
@@ -459,12 +459,12 @@ export default function ProductDetail() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 md:gap-12">
-          {/* Product image */}
-          <div className="bg-white p-4 rounded-lg border flex items-center justify-center">
-            <img 
-              src={product.image || "/placeholder.svg"} 
-              alt={product.name}
-              className="max-h-[500px] object-contain"
+          {/* Product images carousel */}
+          <div className="bg-white p-4 rounded-lg border">
+            <ProductImageCarousel 
+              images={productImages.length > 0 ? productImages : [product.image || "/placeholder.svg"]}
+              productName={product.name}
+              className="w-full h-[500px]"
             />
           </div>
 

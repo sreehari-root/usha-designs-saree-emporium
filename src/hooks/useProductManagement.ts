@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { ProductType, fetchProducts, addProduct, updateProduct, deleteProduct } from '@/lib/api/products';
 import { CategoryType, fetchCategories } from '@/lib/api/categories';
+import { ProductImageType, fetchProductImages } from '@/lib/api/productImages';
 
 export const useProductManagement = () => {
   const { toast } = useToast();
@@ -14,6 +15,7 @@ export const useProductManagement = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(null);
+  const [productImages, setProductImages] = useState<ProductImageType[]>([]);
   const productsPerPage = 10;
   
   // New product form state
@@ -59,6 +61,20 @@ export const useProductManagement = () => {
     
     loadData();
   }, [toast]);
+
+  // Load product images when editing a product
+  useEffect(() => {
+    const loadProductImages = async () => {
+      if (selectedProduct && isEditDialogOpen) {
+        const images = await fetchProductImages(selectedProduct.id);
+        setProductImages(images);
+      } else if (!isEditDialogOpen) {
+        setProductImages([]);
+      }
+    };
+    
+    loadProductImages();
+  }, [selectedProduct, isEditDialogOpen]);
 
   // Filter products based on search term
   const filteredProducts = products.filter(product =>
@@ -154,6 +170,7 @@ export const useProductManagement = () => {
     });
     setImageFile(null);
     setImagePreview(null);
+    setProductImages([]);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -254,6 +271,10 @@ export const useProductManagement = () => {
     reader.readAsDataURL(file);
   };
 
+  const handleProductImagesChange = (images: ProductImageType[]) => {
+    setProductImages(images);
+  };
+
   return {
     // State
     products,
@@ -277,6 +298,7 @@ export const useProductManagement = () => {
     editImageFile,
     editImagePreview,
     productsPerPage,
+    productImages,
     
     // Actions
     handleEdit,
@@ -287,5 +309,6 @@ export const useProductManagement = () => {
     handleSwitchChange,
     handleCategoryChange,
     handleImageChange,
+    onProductImagesChange: handleProductImagesChange,
   };
 };

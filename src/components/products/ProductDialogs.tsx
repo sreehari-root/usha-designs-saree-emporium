@@ -1,37 +1,35 @@
+
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
-import ProductForm from '@/components/products/ProductForm';
+import { Plus } from 'lucide-react';
+import ProductForm from './ProductForm';
+import ProductImageManager from './ProductImageManager';
 import { ProductType } from '@/lib/api/products';
 import { CategoryType } from '@/lib/api/categories';
+import { ProductImageType } from '@/lib/api/productImages';
 
 interface ProductDialogsProps {
-  // Add dialog props
   isAddDialogOpen: boolean;
   setIsAddDialogOpen: (open: boolean) => void;
-  newProduct: any;
+  newProduct: Partial<ProductType>;
   imageFile: File | null;
   imagePreview: string | null;
-  
-  // Edit dialog props
   isEditDialogOpen: boolean;
   setIsEditDialogOpen: (open: boolean) => void;
   selectedProduct: ProductType | null;
   editImageFile: File | null;
   editImagePreview: string | null;
-  
-  // Common props
   categories: CategoryType[];
   isLoading: boolean;
-  
-  // Handlers
   onAddProduct: (e: React.FormEvent) => void;
   onUpdateProduct: (e: React.FormEvent) => void;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   onCategoryChange: (value: string) => void;
   onSwitchChange: (name: string, checked: boolean) => void;
   onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  productImages: ProductImageType[];
+  onProductImagesChange: (images: ProductImageType[]) => void;
 }
 
 const ProductDialogs = ({
@@ -53,61 +51,84 @@ const ProductDialogs = ({
   onCategoryChange,
   onSwitchChange,
   onImageChange,
+  productImages,
+  onProductImagesChange,
 }: ProductDialogsProps) => {
   return (
     <>
-      {/* Add Product Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogTrigger asChild>
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
+          <Button className="bg-usha-burgundy hover:bg-usha-burgundy/90">
+            <Plus className="mr-2 h-4 w-4" />
             Add Product
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Product</DialogTitle>
           </DialogHeader>
-          <ProductForm
-            product={newProduct}
-            categories={categories}
-            imageFile={imageFile}
-            imagePreview={imagePreview}
-            isLoading={isLoading}
-            onSubmit={onAddProduct}
-            onInputChange={onInputChange}
-            onCategoryChange={onCategoryChange}
-            onSwitchChange={onSwitchChange}
-            onImageChange={onImageChange}
-            onCancel={() => setIsAddDialogOpen(false)}
-          />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <ProductForm
+                product={newProduct}
+                imageFile={imageFile}
+                imagePreview={imagePreview}
+                categories={categories}
+                isLoading={isLoading}
+                onSubmit={onAddProduct}
+                onInputChange={onInputChange}
+                onCategoryChange={onCategoryChange}
+                onSwitchChange={onSwitchChange}
+                onImageChange={onImageChange}
+                submitLabel="Add Product"
+              />
+            </div>
+            <div>
+              <ProductImageManager
+                productId={newProduct.id || 'new'}
+                images={productImages}
+                onImagesChange={onProductImagesChange}
+                isLoading={isLoading}
+              />
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Product Dialog */}
-      {selectedProduct && (
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Edit Product</DialogTitle>
-            </DialogHeader>
-            <ProductForm
-              product={selectedProduct}
-              categories={categories}
-              imageFile={editImageFile}
-              imagePreview={editImagePreview}
-              isLoading={isLoading}
-              isEdit={true}
-              onSubmit={onUpdateProduct}
-              onInputChange={onInputChange}
-              onCategoryChange={onCategoryChange}
-              onSwitchChange={onSwitchChange}
-              onImageChange={onImageChange}
-              onCancel={() => setIsEditDialogOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+          </DialogHeader>
+          {selectedProduct && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <ProductForm
+                  product={selectedProduct}
+                  imageFile={editImageFile}
+                  imagePreview={editImagePreview}
+                  categories={categories}
+                  isLoading={isLoading}
+                  onSubmit={onUpdateProduct}
+                  onInputChange={onInputChange}
+                  onCategoryChange={onCategoryChange}
+                  onSwitchChange={onSwitchChange}
+                  onImageChange={onImageChange}
+                  submitLabel="Update Product"
+                />
+              </div>
+              <div>
+                <ProductImageManager
+                  productId={selectedProduct.id}
+                  images={productImages}
+                  onImagesChange={onProductImagesChange}
+                  isLoading={isLoading}
+                />
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
