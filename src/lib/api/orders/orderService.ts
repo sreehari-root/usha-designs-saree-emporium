@@ -60,7 +60,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
     const userIds = [...new Set(orders.map(order => order.user_id))];
     console.log('Unique user IDs from orders:', userIds);
     
-    // Get user emails using the RPC function
+    // Get user emails - fetch all users if no specific IDs
     let userEmails: Array<{id: string, email: string}> = [];
     try {
       console.log('Calling get_user_emails RPC function...');
@@ -69,7 +69,16 @@ export const fetchOrders = async (): Promise<Order[]> => {
 
       if (emailError) {
         console.error('Error fetching user emails:', emailError);
-        // Continue without emails rather than failing completely
+        // Try without parameters as fallback
+        const { data: fallbackEmailData, error: fallbackEmailError } = await supabase
+          .rpc('get_user_emails');
+        
+        if (fallbackEmailError) {
+          console.error('Fallback email fetch also failed:', fallbackEmailError);
+        } else {
+          userEmails = fallbackEmailData || [];
+          console.log('Fallback user emails fetched:', userEmails.length);
+        }
       } else {
         userEmails = emailData || [];
         console.log('User emails fetched:', userEmails.length);
@@ -133,6 +142,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
     });
 
     console.log('Processed orders:', processedOrders.length);
+    console.log('Final processed orders:', processedOrders);
     return processedOrders;
   } catch (error) {
     console.error('Error fetching orders:', error);

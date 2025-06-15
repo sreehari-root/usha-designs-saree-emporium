@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,10 +31,19 @@ const OrdersPage = () => {
   }, []);
 
   const loadOrders = async () => {
+    console.log('OrdersPage: Starting to load orders...');
     setLoading(true);
-    const ordersData = await fetchOrders();
-    setOrders(ordersData);
-    setLoading(false);
+    try {
+      const ordersData = await fetchOrders();
+      console.log('OrdersPage: Orders received from API:', ordersData);
+      console.log('OrdersPage: Number of orders:', ordersData.length);
+      setOrders(ordersData);
+    } catch (error) {
+      console.error('OrdersPage: Error loading orders:', error);
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
   };
   
   // Filter orders based on search term and status
@@ -47,6 +57,8 @@ const OrdersPage = () => {
     
     return matchesSearch && matchesStatus;
   });
+  
+  console.log('OrdersPage: Filtered orders:', filteredOrders.length);
   
   // Pagination
   const indexOfLastOrder = currentPage * ordersPerPage;
@@ -81,7 +93,7 @@ const OrdersPage = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold">Orders Management</h1>
-          <p className="text-muted-foreground">View and manage customer orders</p>
+          <p className="text-muted-foreground">View and manage customer orders ({orders.length} total)</p>
         </div>
       </div>
       
@@ -134,45 +146,53 @@ const OrdersPage = () => {
             </DropdownMenu>
           </div>
           
-          <OrdersTable 
-            orders={currentOrders}
-            onViewOrder={viewOrder}
-            onUpdateStatus={handleUpdateOrderStatus}
-          />
-          
-          {filteredOrders.length > 0 && pageCount > 1 && (
-            <div className="flex justify-center mt-4">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious 
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    />
-                  </PaginationItem>
-                  {Array.from({ length: Math.min(5, pageCount) }, (_, i) => {
-                    const pageNumber = Math.max(1, Math.min(currentPage - 2 + i, pageCount));
-                    return (
-                      <PaginationItem key={pageNumber}>
-                        <PaginationLink
-                          isActive={currentPage === pageNumber}
-                          onClick={() => setCurrentPage(pageNumber)}
-                          className="cursor-pointer"
-                        >
-                          {pageNumber}
-                        </PaginationLink>
-                      </PaginationItem>
-                    );
-                  })}
-                  <PaginationItem>
-                    <PaginationNext 
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, pageCount))}
-                      className={currentPage === pageCount ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
+          {orders.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No orders found</p>
             </div>
+          ) : (
+            <>
+              <OrdersTable 
+                orders={currentOrders}
+                onViewOrder={viewOrder}
+                onUpdateStatus={handleUpdateOrderStatus}
+              />
+              
+              {filteredOrders.length > 0 && pageCount > 1 && (
+                <div className="flex justify-center mt-4">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                      {Array.from({ length: Math.min(5, pageCount) }, (_, i) => {
+                        const pageNumber = Math.max(1, Math.min(currentPage - 2 + i, pageCount));
+                        return (
+                          <PaginationItem key={pageNumber}>
+                            <PaginationLink
+                              isActive={currentPage === pageNumber}
+                              onClick={() => setCurrentPage(pageNumber)}
+                              className="cursor-pointer"
+                            >
+                              {pageNumber}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      })}
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, pageCount))}
+                          className={currentPage === pageCount ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
