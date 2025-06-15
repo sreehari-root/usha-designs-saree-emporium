@@ -33,20 +33,51 @@ export interface RecentOrder {
 
 export const getDashboardStats = async (): Promise<DashboardStats> => {
   try {
-    // Get total orders and revenue
+    console.log('Fetching dashboard stats...');
+    
+    // Check admin status first
+    const { data: isAdminData, error: adminError } = await supabase.rpc('is_admin');
+    if (adminError || !isAdminData) {
+      console.error('Not admin or error checking admin status:', adminError);
+      return {
+        totalOrders: 0,
+        totalRevenue: 0,
+        totalCustomers: 0,
+        totalProducts: 0,
+        pendingOrders: 0,
+        lowStockProducts: 0,
+        recentReviews: 0,
+      };
+    }
+
+    // Get total orders and revenue with detailed logging
+    console.log('Fetching orders for dashboard stats...');
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
-      .select('total, status');
+      .select('total, status, created_at');
 
-    if (ordersError) throw ordersError;
+    if (ordersError) {
+      console.error('Error fetching orders for dashboard:', ordersError);
+      throw ordersError;
+    }
+
+    console.log('Orders fetched for dashboard:', orders?.length || 0);
+    console.log('Orders data sample:', orders?.slice(0, 3));
 
     const totalOrders = orders?.length || 0;
     const totalRevenue = orders?.reduce((sum, order) => sum + order.total, 0) || 0;
     const pendingOrders = orders?.filter(order => order.status === 'pending').length || 0;
 
-    // Get total customers using the fixed RPC function
+    console.log('Dashboard stats calculated:', {
+      totalOrders,
+      totalRevenue,
+      pendingOrders
+    });
+
+    // Get total customers using the RPC function
     let totalCustomers = 0;
     try {
+      console.log('Fetching customers count...');
       const { data: allUsers, error: customersError } = await supabase
         .rpc('get_user_emails', { user_ids: [] });
 
@@ -63,6 +94,8 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
       } else {
         totalCustomers = allUsers?.length || 0;
       }
+      
+      console.log('Total customers count:', totalCustomers);
     } catch (error) {
       console.error('Error getting customer count:', error);
       // Final fallback to profiles
@@ -77,7 +110,10 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
       .from('products')
       .select('*', { count: 'exact', head: true });
 
-    if (productsError) throw productsError;
+    if (productsError) {
+      console.error('Error fetching products count:', productsError);
+      throw productsError;
+    }
 
     // Get low stock products (stock < 10)
     const { count: lowStockProducts, error: lowStockError } = await supabase
@@ -85,7 +121,10 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
       .select('*', { count: 'exact', head: true })
       .lt('stock', 10);
 
-    if (lowStockError) throw lowStockError;
+    if (lowStockError) {
+      console.error('Error fetching low stock products:', lowStockError);
+      throw lowStockError;
+    }
 
     // Get recent reviews count (last 30 days)
     const thirtyDaysAgo = new Date();
@@ -96,19 +135,12 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
       .select('*', { count: 'exact', head: true })
       .gte('created_at', thirtyDaysAgo.toISOString());
 
-    if (reviewsError) throw reviewsError;
+    if (reviewsError) {
+      console.error('Error fetching reviews count:', reviewsError);
+      throw reviewsError;
+    }
 
-    console.log('Dashboard stats:', {
-      totalOrders,
-      totalRevenue,
-      totalCustomers,
-      totalProducts: totalProducts || 0,
-      pendingOrders,
-      lowStockProducts: lowStockProducts || 0,
-      recentReviews: recentReviews || 0,
-    });
-
-    return {
+    const finalStats = {
       totalOrders,
       totalRevenue,
       totalCustomers,
@@ -117,6 +149,9 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
       lowStockProducts: lowStockProducts || 0,
       recentReviews: recentReviews || 0,
     };
+
+    console.log('Final dashboard stats:', finalStats);
+    return finalStats;
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
     return {
