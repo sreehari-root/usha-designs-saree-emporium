@@ -54,16 +54,41 @@ const ReportsPage = () => {
         .from('products')
         .select('*, categories(name)');
 
-      // Fetch profiles count
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id');
+      // Get total customers using the fixed RPC function - get all users
+      let totalCustomers = 0;
+      try {
+        console.log('ReportsPage: Fetching all customers count...');
+        const { data: allUsers, error: customersError } = await supabase
+          .rpc('get_user_emails', { user_ids: [] });
 
-      if (orders && products && profiles) {
+        if (customersError) {
+          console.error('ReportsPage: Error fetching user count:', customersError);
+          // Fallback to profiles count
+          const { count: profileCount, error: profileError } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true });
+          
+          if (!profileError) {
+            totalCustomers = profileCount || 0;
+          }
+        } else {
+          totalCustomers = allUsers?.length || 0;
+        }
+        
+        console.log('ReportsPage: Total customers count:', totalCustomers);
+      } catch (error) {
+        console.error('ReportsPage: Error getting customer count:', error);
+        // Final fallback to profiles
+        const { count: profileCount } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
+        totalCustomers = profileCount || 0;
+      }
+
+      if (orders && products) {
         // Calculate total revenue and orders
         const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
         const totalOrders = orders.length;
-        const totalCustomers = profiles.length;
 
         // Calculate monthly sales (last 12 months)
         const monthlySales = Array.from({ length: 12 }, (_, i) => {
@@ -130,7 +155,7 @@ const ReportsPage = () => {
         setDashboardData({
           totalRevenue,
           totalOrders,
-          totalCustomers,
+          totalCustomers, // Use the corrected customer count
           conversionRate: totalCustomers > 0 ? ((totalOrders / totalCustomers) * 100) : 0,
           monthlySales,
           categoryData,

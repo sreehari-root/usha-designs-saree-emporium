@@ -116,7 +116,7 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       });
     }
 
-    // Combine the data - create customers for all authenticated users
+    // Combine the data - create customers for all authenticated users with proper names
     const customers = allUserEmails.map(userEmail => {
       const profile = profiles?.find(p => p.id === userEmail.id);
       const stats = customerStats.get(userEmail.id) || {
@@ -125,11 +125,20 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
         last_order_date: null
       };
       
+      // Use profile name if available, otherwise extract from email
+      const firstName = profile?.first_name || '';
+      const lastName = profile?.last_name || '';
+      
+      // If no profile name, try to extract name from email (before @)
+      const emailUsername = userEmail.email.split('@')[0];
+      const fallbackFirstName = firstName || emailUsername || 'User';
+      const fallbackLastName = lastName || '';
+      
       return {
         id: userEmail.id,
         email: userEmail.email,
-        first_name: profile?.first_name || null,
-        last_name: profile?.last_name || null,
+        first_name: fallbackFirstName,
+        last_name: fallbackLastName,
         phone: profile?.phone || null,
         address: profile?.address || null,
         created_at: profile?.created_at || new Date().toISOString(),
@@ -141,6 +150,7 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
     });
 
     console.log('Customer data processed:', customers.length);
+    console.log('Sample customer data:', customers.slice(0, 2));
     return customers;
   } catch (error) {
     console.error('Error fetching customers:', error);

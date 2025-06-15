@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface DashboardStats {
@@ -33,12 +32,12 @@ export interface RecentOrder {
 
 export const getDashboardStats = async (): Promise<DashboardStats> => {
   try {
-    console.log('Fetching dashboard stats...');
+    console.log('Analytics: Fetching dashboard stats...');
     
     // Check admin status first
     const { data: isAdminData, error: adminError } = await supabase.rpc('is_admin');
     if (adminError || !isAdminData) {
-      console.error('Not admin or error checking admin status:', adminError);
+      console.error('Analytics: Not admin or error checking admin status:', adminError);
       return {
         totalOrders: 0,
         totalRevenue: 0,
@@ -51,38 +50,37 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
     }
 
     // Get total orders and revenue with detailed logging
-    console.log('Fetching orders for dashboard stats...');
+    console.log('Analytics: Fetching orders for dashboard stats...');
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
       .select('total, status, created_at');
 
     if (ordersError) {
-      console.error('Error fetching orders for dashboard:', ordersError);
+      console.error('Analytics: Error fetching orders for dashboard:', ordersError);
       throw ordersError;
     }
 
-    console.log('Orders fetched for dashboard:', orders?.length || 0);
-    console.log('Orders data sample:', orders?.slice(0, 3));
+    console.log('Analytics: Orders fetched for dashboard:', orders?.length || 0);
 
     const totalOrders = orders?.length || 0;
     const totalRevenue = orders?.reduce((sum, order) => sum + order.total, 0) || 0;
     const pendingOrders = orders?.filter(order => order.status === 'pending').length || 0;
 
-    console.log('Dashboard stats calculated:', {
+    console.log('Analytics: Dashboard stats calculated:', {
       totalOrders,
       totalRevenue,
       pendingOrders
     });
 
-    // Get total customers using the RPC function
+    // Get total customers using the fixed RPC function - get all users
     let totalCustomers = 0;
     try {
-      console.log('Fetching customers count...');
+      console.log('Analytics: Fetching all customers count...');
       const { data: allUsers, error: customersError } = await supabase
         .rpc('get_user_emails', { user_ids: [] });
 
       if (customersError) {
-        console.error('Error fetching user count:', customersError);
+        console.error('Analytics: Error fetching user count:', customersError);
         // Fallback to profiles count
         const { count: profileCount, error: profileError } = await supabase
           .from('profiles')
@@ -95,9 +93,9 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
         totalCustomers = allUsers?.length || 0;
       }
       
-      console.log('Total customers count:', totalCustomers);
+      console.log('Analytics: Total customers count:', totalCustomers);
     } catch (error) {
-      console.error('Error getting customer count:', error);
+      console.error('Analytics: Error getting customer count:', error);
       // Final fallback to profiles
       const { count: profileCount } = await supabase
         .from('profiles')
@@ -111,7 +109,7 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
       .select('*', { count: 'exact', head: true });
 
     if (productsError) {
-      console.error('Error fetching products count:', productsError);
+      console.error('Analytics: Error fetching products count:', productsError);
       throw productsError;
     }
 
@@ -122,7 +120,7 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
       .lt('stock', 10);
 
     if (lowStockError) {
-      console.error('Error fetching low stock products:', lowStockError);
+      console.error('Analytics: Error fetching low stock products:', lowStockError);
       throw lowStockError;
     }
 
@@ -136,24 +134,24 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
       .gte('created_at', thirtyDaysAgo.toISOString());
 
     if (reviewsError) {
-      console.error('Error fetching reviews count:', reviewsError);
+      console.error('Analytics: Error fetching reviews count:', reviewsError);
       throw reviewsError;
     }
 
     const finalStats = {
       totalOrders,
       totalRevenue,
-      totalCustomers,
+      totalCustomers, // This now correctly uses all authenticated users count
       totalProducts: totalProducts || 0,
       pendingOrders,
       lowStockProducts: lowStockProducts || 0,
       recentReviews: recentReviews || 0,
     };
 
-    console.log('Final dashboard stats:', finalStats);
+    console.log('Analytics: Final dashboard stats:', finalStats);
     return finalStats;
   } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
+    console.error('Analytics: Error fetching dashboard stats:', error);
     return {
       totalOrders: 0,
       totalRevenue: 0,
