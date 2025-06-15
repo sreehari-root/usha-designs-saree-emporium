@@ -11,9 +11,10 @@ import { supabase } from '@/integrations/supabase/client';
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, signOut, isAdmin, loading } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   // Get cart count
   const { data: cartCount = 0 } = useQuery({
@@ -63,8 +64,15 @@ const Navbar = () => {
   };
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
+    setIsSigningOut(true);
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Sign out error:', error);
+    } finally {
+      setIsSigningOut(false);
+    }
   };
 
   return (
@@ -135,7 +143,7 @@ const Navbar = () => {
               )}
             </Link>
 
-            {user ? (
+            {user && !loading ? (
               <div className="relative group">
                 <Button variant="ghost" size="sm" className="flex items-center space-x-2">
                   <User className="h-5 w-5" />
@@ -158,12 +166,15 @@ const Navbar = () => {
                   )}
                   <button
                     onClick={handleSignOut}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    disabled={isSigningOut}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                   >
-                    Sign Out
+                    {isSigningOut ? 'Signing Out...' : 'Sign Out'}
                   </button>
                 </div>
               </div>
+            ) : loading ? (
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></div>
             ) : (
               <Button asChild variant="default" size="sm">
                 <Link to="/auth">Sign In</Link>

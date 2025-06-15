@@ -24,39 +24,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
+    let mounted = true;
+
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
+        
+        if (!mounted) return;
+
         setSession(session);
         setUser(session?.user ?? null);
         
+        // Defer any additional Supabase operations to avoid deadlock
         if (session?.user) {
-          // Update profile with metadata if it exists
-          await updateProfileFromMetadata(session.user);
-          // Check admin role after a brief delay to ensure profile is created
           setTimeout(() => {
-            checkUserRole(session.user.id);
-          }, 100);
+            if (mounted) {
+              updateProfileFromMetadata(session.user);
+              checkUserRole(session.user.id);
+            }
+          }, 0);
         } else {
           setIsAdmin(false);
+        }
+        
+        // Set loading to false after auth state is processed
+        if (event !== 'TOKEN_REFRESHED') {
+          setLoading(false);
         }
       }
     );
 
     // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        updateProfileFromMetadata(session.user);
-        checkUserRole(session.user.id);
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          setLoading(false);
+          return;
+        }
+
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          if (session?.user) {
+            // Defer profile and role operations
+            setTimeout(() => {
+              if (mounted) {
+                updateProfileFromMetadata(session.user);
+                checkUserRole(session.user.id);
+              }
+            }, 0);
+          }
+          
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        if (mounted) {
+          setLoading(false);
+        }
       }
-      setLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
@@ -171,11 +208,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out.",
-    });
+    try {
+      setLoading(true);
+      
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Error signing out:', error);
+        toast({
+          title: "Sign out failed",
+          description: error.message,
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Clear local state immediately
+      setSession(null);
+      setUser(null);
+      setIsAdmin(false);
+      
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
+    } catch (error: any) {
+      console.error('Unexpected error during sign out:', error);
+      toast({
+        title: "Unexpected error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -22,6 +22,7 @@ export default function MainLayout({
   const { toast } = useToast();
 
   useEffect(() => {
+    // Only check auth requirements after loading is complete
     if (!loading) {
       // Handle authentication requirements
       if (requireAuth && !user) {
@@ -35,7 +36,7 @@ export default function MainLayout({
       }
 
       // Handle admin-only routes
-      if (adminOnly && !isAdmin) {
+      if (adminOnly && (!user || !isAdmin)) {
         toast({
           title: "Access denied",
           description: "You don't have permission to access this page",
@@ -47,15 +48,15 @@ export default function MainLayout({
     }
   }, [user, loading, requireAuth, adminOnly, navigate, isAdmin, toast]);
 
+  // Show loading state for protected routes while auth is being determined
   if (loading && (requireAuth || adminOnly)) {
-    // Show loading state for protected routes
     return (
       <div className="flex min-h-screen flex-col">
         <Navbar />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <div className="spinner h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite] mx-auto"></div>
-            <p className="mt-4">Loading...</p>
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading...</p>
           </div>
         </main>
         <Footer />
