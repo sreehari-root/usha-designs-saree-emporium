@@ -43,7 +43,7 @@ export const fetchReviews = async (): Promise<Review[]> => {
         customer_name: profiles?.find(p => p.id === review.user_id) 
           ? `${profiles.find(p => p.id === review.user_id)?.first_name || ''} ${profiles.find(p => p.id === review.user_id)?.last_name || ''}`.trim()
           : 'Anonymous User'
-      }));
+      })) as Review[];
     }
 
     return reviews || [];
@@ -86,7 +86,7 @@ export const fetchApprovedReviews = async (productId?: string): Promise<Review[]
         customer_name: profiles?.find(p => p.id === review.user_id) 
           ? `${profiles.find(p => p.id === review.user_id)?.first_name || ''} ${profiles.find(p => p.id === review.user_id)?.last_name || ''}`.trim()
           : 'Anonymous User'
-      }));
+      })) as Review[];
     }
 
     return reviews || [];
