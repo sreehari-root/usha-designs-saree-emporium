@@ -1,19 +1,23 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Eye, X } from 'lucide-react';
 import { format } from 'date-fns';
-import { Order } from '@/lib/api/orders';
+import { Order, updateOrderStatus } from '@/lib/api/orders';
 
 interface OrdersTabProps {
   orders: Order[];
   loading: boolean;
   onViewOrder: (order: Order) => void;
+  onOrderUpdate: () => void;
 }
 
-const OrdersTab = ({ orders, loading, onViewOrder }: OrdersTabProps) => {
+const OrdersTab = ({ orders, loading, onViewOrder, onOrderUpdate }: OrdersTabProps) => {
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -31,6 +35,19 @@ const OrdersTab = ({ orders, loading, onViewOrder }: OrdersTabProps) => {
     }
   };
 
+  const canCancelOrder = (status: string) => {
+    return status === 'pending' || status === 'processing';
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    setCancellingOrderId(orderId);
+    const success = await updateOrderStatus(orderId, 'cancelled');
+    if (success) {
+      onOrderUpdate();
+    }
+    setCancellingOrderId(null);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -46,15 +63,16 @@ const OrdersTab = ({ orders, loading, onViewOrder }: OrdersTabProps) => {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="grid grid-cols-5 gap-4 text-sm font-medium text-muted-foreground border-b pb-2">
+            <div className="grid grid-cols-6 gap-4 text-sm font-medium text-muted-foreground border-b pb-2">
               <div>Order ID</div>
               <div>Date</div>
               <div>Status</div>
               <div>Total</div>
-              <div>Action</div>
+              <div>Actions</div>
+              <div></div>
             </div>
             {orders.map((order) => (
-              <div key={order.id} className="grid grid-cols-5 gap-4 items-center py-3 border-b last:border-b-0">
+              <div key={order.id} className="grid grid-cols-6 gap-4 items-center py-3 border-b last:border-b-0">
                 <div className="font-medium">#{order.id.slice(0, 8)}</div>
                 <div className="text-sm">{format(new Date(order.created_at), 'M/d/yyyy')}</div>
                 <div>{getStatusBadge(order.status)}</div>
@@ -69,6 +87,40 @@ const OrdersTab = ({ orders, loading, onViewOrder }: OrdersTabProps) => {
                     <Eye className="w-4 h-4" />
                     View
                   </Button>
+                </div>
+                <div>
+                  {canCancelOrder(order.status) && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          disabled={cancellingOrderId === order.id}
+                        >
+                          <X className="w-4 h-4" />
+                          Cancel
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Cancel Order</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to cancel order #{order.id.slice(0, 8)}? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Keep Order</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleCancelOrder(order.id)}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Cancel Order
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
                 </div>
               </div>
             ))}

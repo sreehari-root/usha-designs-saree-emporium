@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -46,6 +45,10 @@ const Account = () => {
   const viewOrder = (order: Order) => {
     setSelectedOrder(order);
     setShowOrderDetails(true);
+  };
+
+  const handleOrderUpdate = () => {
+    loadUserOrders();
   };
 
   if (!user) {
@@ -132,6 +135,7 @@ const Account = () => {
                     orders={orders}
                     loading={loading}
                     onViewOrder={viewOrder}
+                    onOrderUpdate={handleOrderUpdate}
                   />
                 </TabsContent>
 
