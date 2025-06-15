@@ -42,7 +42,7 @@ export default function ProfileForm() {
         .eq('id', user.id)
         .maybeSingle();
 
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.error('Error loading profile:', error);
         return;
       }
@@ -80,34 +80,35 @@ export default function ProfileForm() {
       console.log('Profile data:', profileData);
 
       // Use upsert to handle both insert and update cases
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .upsert({
           id: user.id,
-          first_name: profileData.first_name,
-          last_name: profileData.last_name,
-          phone: profileData.phone,
-          address: profileData.address,
+          first_name: profileData.first_name.trim(),
+          last_name: profileData.last_name.trim(),
+          phone: profileData.phone.trim(),
+          address: profileData.address.trim(),
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'id'
-        });
+        })
+        .select();
 
       if (error) {
         console.error('Error saving profile:', error);
         throw error;
       }
 
-      console.log('Profile saved successfully');
+      console.log('Profile saved successfully:', data);
       toast({
         title: "Profile Updated",
         description: "Your profile has been updated successfully.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating profile:', error);
       toast({
         title: "Error",
-        description: "Failed to update profile. Please try again.",
+        description: error.message || "Failed to update profile. Please try again.",
         variant: "destructive"
       });
     } finally {
