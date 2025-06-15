@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Order, OrderStatus, ShippingAddress } from './types';
 
@@ -71,7 +70,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
 
     // Get actual email addresses from auth.users via RPC function
     const { data: userEmails, error: emailError } = await supabase
-      .rpc('get_user_emails', { user_ids: userIds });
+      .rpc('get_user_emails', { user_ids: userIds }) as { data: Array<{id: string, email: string}> | null, error: any };
 
     if (emailError) {
       console.error('Error fetching user emails:', emailError);

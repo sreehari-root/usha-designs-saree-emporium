@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -99,7 +98,7 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
 
     // Get actual email addresses from auth.users via RPC function
     const { data: userEmails, error: emailError } = await supabase
-      .rpc('get_user_emails', { user_ids: profiles.map(p => p.id) });
+      .rpc('get_user_emails', { user_ids: profiles.map(p => p.id) }) as { data: Array<{id: string, email: string}> | null, error: any };
 
     if (emailError) {
       console.error('Error fetching user emails:', emailError);
