@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,33 +32,49 @@ export default function Auth() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [recoveryTokens, setRecoveryTokens] = useState<{access_token: string, refresh_token: string} | null>(null);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const [activeTab, setActiveTab] = useState<string>(
     resetParam === 'true' ? 'reset' : (tabParam === 'signup' ? 'signup' : 'login')
   );
 
   useEffect(() => {
-    // Check for password recovery session in URL hash - this must happen FIRST
-    const checkForPasswordRecovery = () => {
+    const handleRecoveryFlow = async () => {
+      // Check URL hash for recovery tokens first
       const hashParams = new URLSearchParams(window.location.hash.slice(1));
       const accessToken = hashParams.get('access_token');
       const refreshToken = hashParams.get('refresh_token');
       const type = hashParams.get('type');
       
       if (type === 'recovery' && accessToken && refreshToken) {
-        console.log('Password recovery URL detected, storing tokens and showing reset form');
-        // Store the tokens without setting the session
+        console.log('Recovery tokens found in URL hash');
+        setIsRecoveryMode(true);
         setRecoveryTokens({
           access_token: accessToken,
           refresh_token: refreshToken
         });
         setShowPasswordReset(true);
-        // Clear the URL hash
+        
+        // Clear the URL hash immediately
         window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+        
+        // Sign out any existing session to prevent auto-login
+        await supabase.auth.signOut();
         return;
+      }
+      
+      // Also check if we're coming from a recovery redirect
+      if (resetParam === 'true' && !accessToken) {
+        // Check if there's an active session that might be from recovery
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          console.log('Found active session on reset page, checking if it\'s from recovery');
+          // Sign out to prevent auto-login during password reset
+          await supabase.auth.signOut();
+        }
       }
     };
 
-    checkForPasswordRecovery();
+    handleRecoveryFlow();
     
     // Update active tab when URL params change
     if (resetParam === 'true' && !showPasswordReset) {
@@ -67,8 +84,8 @@ export default function Auth() {
     }
   }, [tabParam, resetParam, showPasswordReset]);
 
-  // Only redirect if user is logged in AND we're not in password reset flow
-  if (user && !showPasswordReset) {
+  // Only redirect if user is logged in AND we're not in recovery mode
+  if (user && !isRecoveryMode && !showPasswordReset) {
     return <Navigate to="/" />;
   }
 
@@ -87,6 +104,7 @@ export default function Auth() {
             onBack={() => {
               setShowPasswordReset(false);
               setRecoveryTokens(null);
+              setIsRecoveryMode(false);
             }} 
           />
         </div>
