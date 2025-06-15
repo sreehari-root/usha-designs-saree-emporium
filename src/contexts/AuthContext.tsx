@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -36,6 +35,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         setSession(session);
         setUser(session?.user ?? null);
+        
+        // Handle password recovery flow
+        if (event === 'PASSWORD_RECOVERY') {
+          // Redirect to deployed URL for password reset
+          const deployedUrl = 'https://usha-designs-saree-emporium.lovable.app/auth?reset=true';
+          if (window.location.origin === 'http://localhost:3000') {
+            window.location.href = deployedUrl;
+            return;
+          }
+        }
         
         // Defer any additional Supabase operations to avoid deadlock
         if (session?.user) {
@@ -139,7 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
-      const redirectUrl = `${window.location.origin}/`;
+      const redirectUrl = 'https://usha-designs-saree-emporium.lovable.app/';
       
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -248,7 +257,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const resetPassword = async (email: string) => {
     try {
-      // Use the deployed URL instead of window.location.origin
+      // Always use the deployed URL for password reset redirects
       const redirectUrl = 'https://usha-designs-saree-emporium.lovable.app/auth?reset=true';
       
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
