@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,7 +19,11 @@ export default function MainLayout({
 }: MainLayoutProps) {
   const { user, loading, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+
+  // Check if this is an admin route
+  const isAdminRoute = location.pathname.startsWith('/admin');
 
   useEffect(() => {
     // Only check auth requirements after loading is complete
@@ -52,16 +56,21 @@ export default function MainLayout({
   if (loading && (requireAuth || adminOnly)) {
     return (
       <div className="flex min-h-screen flex-col">
-        <Navbar />
+        {!isAdminRoute && <Navbar />}
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading...</p>
           </div>
         </main>
-        <Footer />
+        {!isAdminRoute && <Footer />}
       </div>
     );
+  }
+
+  // For admin routes, don't show the regular navbar and footer
+  if (isAdminRoute) {
+    return <>{children}</>;
   }
 
   return (

@@ -43,7 +43,7 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       return [];
     }
 
-    // Get all user emails - pass empty array to get all users
+    // Get all user emails - pass null to get all users
     const { data: allUserEmails, error: emailError } = await supabase
       .rpc('get_user_emails', { user_ids: null }) as { data: Array<{id: string, email: string}> | null, error: any };
 
@@ -77,7 +77,7 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
     // Get orders information for each user
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
-      .select('user_id, total, created_at');
+      .select('user_id, total, created_at, status');
 
     if (ordersError) {
       console.error('Error fetching orders for customers:', ordersError);
