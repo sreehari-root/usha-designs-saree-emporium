@@ -5,18 +5,17 @@ export const fetchOrders = async (): Promise<Order[]> => {
   try {
     console.log('Fetching all orders for admin...');
     
-    // Check if user is admin first
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      console.error('No authenticated user');
+    // Check if user is authenticated first
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('No authenticated user:', userError);
       return [];
     }
 
     console.log('Current user:', user.id);
 
-    // Verify admin status
-    const { data: isAdminData, error: adminError } = await supabase
-      .rpc('is_admin');
+    // Verify admin status using the existing is_admin function
+    const { data: isAdminData, error: adminError } = await supabase.rpc('is_admin');
 
     if (adminError) {
       console.error('Error checking admin status:', adminError);
@@ -57,7 +56,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
     const userIds = [...new Set(orders.map(order => order.user_id))];
     console.log('Fetching data for user IDs:', userIds);
     
-    // Get all user emails from auth.users
+    // Get all user emails from auth.users using the updated RPC function
     const { data: userEmails, error: emailError } = await supabase
       .rpc('get_user_emails', { user_ids: userIds }) as { data: Array<{id: string, email: string}> | null, error: any };
 

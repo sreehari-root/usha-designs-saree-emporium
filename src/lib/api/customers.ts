@@ -1,5 +1,5 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 
 export interface CustomerType {
   id: string;
@@ -19,18 +19,17 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
   try {
     console.log('Fetching customers data...');
     
-    // Check if user is admin first
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      console.error('No authenticated user');
+    // Check if user is authenticated first
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('No authenticated user:', userError);
       return [];
     }
 
     console.log('Current user:', user.id);
 
-    // Verify admin status
-    const { data: isAdminData, error: adminError } = await supabase
-      .rpc('is_admin');
+    // Verify admin status using the existing is_admin function
+    const { data: isAdminData, error: adminError } = await supabase.rpc('is_admin');
 
     if (adminError) {
       console.error('Error checking admin status:', adminError);
@@ -44,9 +43,9 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
       return [];
     }
 
-    // First, get all user IDs from auth.users via RPC
+    // Get all user emails - pass empty array to get all users
     const { data: allUserEmails, error: emailError } = await supabase
-      .rpc('get_user_emails', { user_ids: [] }) as { data: Array<{id: string, email: string}> | null, error: any };
+      .rpc('get_user_emails', { user_ids: null }) as { data: Array<{id: string, email: string}> | null, error: any };
 
     if (emailError) {
       console.error('Error fetching all user emails:', emailError);
@@ -78,8 +77,7 @@ export const fetchCustomers = async (): Promise<CustomerType[]> => {
     // Get orders information for each user
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
-      .select('user_id, total, created_at')
-      .in('user_id', userIds);
+      .select('user_id, total, created_at');
 
     if (ordersError) {
       console.error('Error fetching orders for customers:', ordersError);
