@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { PlusCircle, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import AdminLayout from '@/components/layout/AdminLayout';
 import ProductForm from '@/components/products/ProductForm';
 import ProductsTable from '@/components/products/ProductsTable';
 import { ProductType, fetchProducts, addProduct, updateProduct, deleteProduct } from '@/lib/api/products';
@@ -265,103 +263,101 @@ const ProductsPage = () => {
   };
 
   return (
-    <AdminLayout>
-      <div className="container mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">Products Management</h1>
-            <p className="text-muted-foreground">Manage your product catalog</p>
-          </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add Product
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Add New Product</DialogTitle>
-              </DialogHeader>
-              <ProductForm
-                product={newProduct}
-                categories={categories}
-                imageFile={imageFile}
-                imagePreview={imagePreview}
-                isLoading={isLoading}
-                onSubmit={handleAddProduct}
-                onInputChange={handleInputChange}
-                onCategoryChange={handleCategoryChange}
-                onSwitchChange={handleSwitchChange}
-                onImageChange={handleImageChange}
-                onCancel={() => setIsAddDialogOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
+    <div className="container mx-auto p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Products Management</h1>
+          <p className="text-muted-foreground">Manage your product catalog</p>
         </div>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>Product Catalog</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search products..."
-                  className="pl-8"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-            
-            <ProductsTable
-              products={currentProducts}
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Product
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Add New Product</DialogTitle>
+            </DialogHeader>
+            <ProductForm
+              product={newProduct}
+              categories={categories}
+              imageFile={imageFile}
+              imagePreview={imagePreview}
               isLoading={isLoading}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onAddProduct={() => setIsAddDialogOpen(true)}
+              onSubmit={handleAddProduct}
+              onInputChange={handleInputChange}
+              onCategoryChange={handleCategoryChange}
+              onSwitchChange={handleSwitchChange}
+              onImageChange={handleImageChange}
+              onCancel={() => setIsAddDialogOpen(false)}
             />
-            
-            {filteredProducts.length > productsPerPage && (
-              <div className="flex justify-center mt-4">
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious 
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-                      />
-                    </PaginationItem>
-                    {Array.from({ length: Math.min(5, pageCount) }, (_, i) => {
-                      const pageNumber = Math.max(1, Math.min(currentPage - 2 + i, pageCount));
-                      return (
-                        <PaginationItem key={pageNumber}>
-                          <PaginationLink
-                            isActive={currentPage === pageNumber}
-                            onClick={() => setCurrentPage(pageNumber)}
-                          >
-                            {pageNumber}
-                          </PaginationLink>
-                        </PaginationItem>
-                      );
-                    })}
-                    <PaginationItem>
-                      <PaginationNext 
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, pageCount))}
-                        className={currentPage === pageCount ? "pointer-events-none opacity-50" : ""}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          </DialogContent>
+        </Dialog>
       </div>
+      
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle>Product Catalog</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search products..."
+                className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <ProductsTable
+            products={currentProducts}
+            isLoading={isLoading}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onAddProduct={() => setIsAddDialogOpen(true)}
+          />
+          
+          {filteredProducts.length > productsPerPage && (
+            <div className="flex justify-center mt-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: Math.min(5, pageCount) }, (_, i) => {
+                    const pageNumber = Math.max(1, Math.min(currentPage - 2 + i, pageCount));
+                    return (
+                      <PaginationItem key={pageNumber}>
+                        <PaginationLink
+                          isActive={currentPage === pageNumber}
+                          onClick={() => setCurrentPage(pageNumber)}
+                        >
+                          {pageNumber}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, pageCount))}
+                      className={currentPage === pageCount ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
+        </CardContent>
+      </Card>
       
       {/* Edit Product Dialog */}
       {selectedProduct && (
@@ -387,7 +383,7 @@ const ProductsPage = () => {
           </DialogContent>
         </Dialog>
       )}
-    </AdminLayout>
+    </div>
   );
 };
 
