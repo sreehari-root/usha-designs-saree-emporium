@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ProductsTable from '@/components/products/ProductsTable';
@@ -25,6 +24,8 @@ const ProductsPage = () => {
     newProduct,
     imageFile,
     imagePreview,
+    additionalImages,
+    additionalImagePreviews,
     editImageFile,
     editImagePreview,
     productsPerPage,
@@ -37,6 +38,8 @@ const ProductsPage = () => {
     handleSwitchChange,
     handleCategoryChange,
     handleImageChange,
+    handleAdditionalImagesChange,
+    handleRemoveAdditionalImage,
     onProductImagesChange,
   } = useProductManagement();
 
@@ -53,6 +56,8 @@ const ProductsPage = () => {
           newProduct={newProduct}
           imageFile={imageFile}
           imagePreview={imagePreview}
+          additionalImages={additionalImages}
+          additionalImagePreviews={additionalImagePreviews}
           isEditDialogOpen={isEditDialogOpen}
           setIsEditDialogOpen={setIsEditDialogOpen}
           selectedProduct={selectedProduct}
@@ -66,6 +71,8 @@ const ProductsPage = () => {
           onCategoryChange={handleCategoryChange}
           onSwitchChange={handleSwitchChange}
           onImageChange={handleImageChange}
+          onAdditionalImagesChange={handleAdditionalImagesChange}
+          onRemoveAdditionalImage={handleRemoveAdditionalImage}
           productImages={productImages}
           onProductImagesChange={onProductImagesChange}
         />

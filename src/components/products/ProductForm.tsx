@@ -1,6 +1,5 @@
-
 import React, { useRef } from 'react';
-import { Upload, Loader2 } from 'lucide-react';
+import { Upload, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +14,8 @@ interface ProductFormProps {
   categories: CategoryType[];
   imageFile: File | null;
   imagePreview: string | null;
+  additionalImages?: File[];
+  additionalImagePreviews?: string[];
   isLoading: boolean;
   isEdit?: boolean;
   onSubmit: (e: React.FormEvent) => void;
@@ -22,6 +23,8 @@ interface ProductFormProps {
   onCategoryChange: (value: string) => void;
   onSwitchChange: (name: string, checked: boolean) => void;
   onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onAdditionalImagesChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemoveAdditionalImage?: (index: number) => void;
   onCancel: () => void;
 }
 
@@ -30,6 +33,8 @@ const ProductForm = ({
   categories,
   imageFile,
   imagePreview,
+  additionalImages = [],
+  additionalImagePreviews = [],
   isLoading,
   isEdit = false,
   onSubmit,
@@ -37,9 +42,12 @@ const ProductForm = ({
   onCategoryChange,
   onSwitchChange,
   onImageChange,
+  onAdditionalImagesChange,
+  onRemoveAdditionalImage,
   onCancel
 }: ProductFormProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const additionalImagesInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <form onSubmit={onSubmit} className="space-y-4 py-4">
@@ -116,9 +124,9 @@ const ProductForm = ({
         />
       </div>
       
-      {/* Product Image Section - Always show for both add and edit */}
+      {/* Main Product Image Section */}
       <div className="space-y-2">
-        <Label>Product Image</Label>
+        <Label>Main Product Image</Label>
         <div className="flex items-center space-x-4">
           <Button
             type="button"
@@ -126,7 +134,7 @@ const ProductForm = ({
             onClick={() => fileInputRef.current?.click()}
           >
             <Upload className="mr-2 h-4 w-4" />
-            Upload Image
+            Upload Main Image
           </Button>
           <input
             type="file"
@@ -139,18 +147,67 @@ const ProductForm = ({
             <div className="relative h-16 w-16 rounded-md overflow-hidden">
               <img
                 src={imagePreview || product.image || ''}
-                alt="Preview"
+                alt="Main preview"
                 className="h-full w-full object-cover"
               />
             </div>
           )}
         </div>
-        {isEdit && (
-          <p className="text-sm text-muted-foreground">
-            Note: Additional product images can be managed in the "Product Images" section on the right.
-          </p>
-        )}
       </div>
+
+      {/* Additional Images Section - Only for new products */}
+      {!isEdit && (
+        <div className="space-y-2">
+          <Label>Additional Product Images</Label>
+          <div className="space-y-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => additionalImagesInputRef.current?.click()}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              Upload Additional Images
+            </Button>
+            <input
+              type="file"
+              ref={additionalImagesInputRef}
+              className="hidden"
+              accept="image/*"
+              multiple
+              onChange={onAdditionalImagesChange}
+            />
+            
+            {additionalImagePreviews.length > 0 && (
+              <div className="grid grid-cols-4 gap-4">
+                {additionalImagePreviews.map((preview, index) => (
+                  <div key={index} className="relative h-20 w-20 rounded-md overflow-hidden group">
+                    <img
+                      src={preview}
+                      alt={`Additional preview ${index + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => onRemoveAdditionalImage?.(index)}
+                    >
+                      <X size={12} />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isEdit && (
+        <p className="text-sm text-muted-foreground">
+          Note: Additional product images can be managed in the "Product Images" section on the right.
+        </p>
+      )}
       
       <div className="space-y-2">
         <Label htmlFor={isEdit ? "edit-description" : "description"}>Description</Label>

@@ -15,6 +15,8 @@ interface ProductDialogsProps {
   newProduct: Partial<ProductType>;
   imageFile: File | null;
   imagePreview: string | null;
+  additionalImages: File[];
+  additionalImagePreviews: string[];
   isEditDialogOpen: boolean;
   setIsEditDialogOpen: (open: boolean) => void;
   selectedProduct: ProductType | null;
@@ -28,6 +30,8 @@ interface ProductDialogsProps {
   onCategoryChange: (value: string) => void;
   onSwitchChange: (name: string, checked: boolean) => void;
   onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onAdditionalImagesChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemoveAdditionalImage: (index: number) => void;
   productImages: ProductImageType[];
   onProductImagesChange: (images: ProductImageType[]) => void;
 }
@@ -38,6 +42,8 @@ const ProductDialogs = ({
   newProduct,
   imageFile,
   imagePreview,
+  additionalImages,
+  additionalImagePreviews,
   isEditDialogOpen,
   setIsEditDialogOpen,
   selectedProduct,
@@ -51,6 +57,8 @@ const ProductDialogs = ({
   onCategoryChange,
   onSwitchChange,
   onImageChange,
+  onAdditionalImagesChange,
+  onRemoveAdditionalImage,
   productImages,
   onProductImagesChange,
 }: ProductDialogsProps) => {
@@ -71,6 +79,8 @@ const ProductDialogs = ({
             product={newProduct}
             imageFile={imageFile}
             imagePreview={imagePreview}
+            additionalImages={additionalImages}
+            additionalImagePreviews={additionalImagePreviews}
             categories={categories}
             isLoading={isLoading}
             onSubmit={onAddProduct}
@@ -78,6 +88,8 @@ const ProductDialogs = ({
             onCategoryChange={onCategoryChange}
             onSwitchChange={onSwitchChange}
             onImageChange={onImageChange}
+            onAdditionalImagesChange={onAdditionalImagesChange}
+            onRemoveAdditionalImage={onRemoveAdditionalImage}
             onCancel={() => setIsAddDialogOpen(false)}
           />
         </DialogContent>

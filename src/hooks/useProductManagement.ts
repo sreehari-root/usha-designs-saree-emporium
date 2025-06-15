@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { ProductType, fetchProducts, addProduct, updateProduct, deleteProduct } from '@/lib/api/products';
 import { CategoryType, fetchCategories } from '@/lib/api/categories';
-import { ProductImageType, fetchProductImages } from '@/lib/api/productImages';
+import { ProductImageType, fetchProductImages, addProductImage } from '@/lib/api/productImages';
 
 export const useProductManagement = () => {
   const { toast } = useToast();
@@ -32,10 +31,11 @@ export const useProductManagement = () => {
   
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [additionalImages, setAdditionalImages] = useState<File[]>([]);
+  const [additionalImagePreviews, setAdditionalImagePreviews] = useState<string[]>([]);
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
 
-  // Load products and categories on component mount
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
@@ -62,7 +62,6 @@ export const useProductManagement = () => {
     loadData();
   }, [toast]);
 
-  // Load product images when editing a product
   useEffect(() => {
     const loadProductImages = async () => {
       if (selectedProduct && isEditDialogOpen) {
@@ -76,13 +75,11 @@ export const useProductManagement = () => {
     loadProductImages();
   }, [selectedProduct, isEditDialogOpen]);
 
-  // Filter products based on search term
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (product.category_name && product.category_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Pagination
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
   const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
@@ -112,6 +109,13 @@ export const useProductManagement = () => {
     try {
       const product = await addProduct(newProduct, imageFile || undefined);
       if (product) {
+        // Add additional images if any
+        if (additionalImages.length > 0) {
+          for (let i = 0; i < additionalImages.length; i++) {
+            await addProductImage(product.id, additionalImages[i], i + 1);
+          }
+        }
+
         const updatedProduct = {
           ...product,
           category_name: categories.find(c => c.id === product.category_id)?.name
@@ -170,6 +174,8 @@ export const useProductManagement = () => {
     });
     setImageFile(null);
     setImagePreview(null);
+    setAdditionalImages([]);
+    setAdditionalImagePreviews([]);
     setProductImages([]);
   };
 
@@ -271,6 +277,51 @@ export const useProductManagement = () => {
     reader.readAsDataURL(file);
   };
 
+  const handleAdditionalImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const validFiles: File[] = [];
+    const validPreviews: string[] = [];
+
+    Array.from(files).forEach((file) => {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: 'Invalid file',
+          description: `${file.name} is not an image file`,
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File too large',
+          description: `${file.name} size should not exceed 5MB`,
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      validFiles.push(file);
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        validPreviews.push(reader.result as string);
+        if (validPreviews.length === validFiles.length) {
+          setAdditionalImages([...additionalImages, ...validFiles]);
+          setAdditionalImagePreviews([...additionalImagePreviews, ...validPreviews]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleRemoveAdditionalImage = (index: number) => {
+    setAdditionalImages(additionalImages.filter((_, i) => i !== index));
+    setAdditionalImagePreviews(additionalImagePreviews.filter((_, i) => i !== index));
+  };
+
   const handleProductImagesChange = (images: ProductImageType[]) => {
     setProductImages(images);
   };
@@ -295,6 +346,8 @@ export const useProductManagement = () => {
     newProduct,
     imageFile,
     imagePreview,
+    additionalImages,
+    additionalImagePreviews,
     editImageFile,
     editImagePreview,
     productsPerPage,
@@ -309,6 +362,8 @@ export const useProductManagement = () => {
     handleSwitchChange,
     handleCategoryChange,
     handleImageChange,
+    handleAdditionalImagesChange,
+    handleRemoveAdditionalImage,
     onProductImagesChange: handleProductImagesChange,
   };
 };
