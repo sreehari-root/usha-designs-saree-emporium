@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import ProductForm from '@/components/products/ProductForm';
-import { ProductType, CategoryType } from '@/lib/api/products';
+import { ProductType } from '@/lib/api/products';
+import { CategoryType } from '@/lib/api/categories';
 
 interface ProductDialogsProps {
   // Add dialog props
