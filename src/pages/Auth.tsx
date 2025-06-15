@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,11 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function Auth() {
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, resetPassword, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
+  const resetParam = searchParams.get('reset');
   
   // Form states
   const [loginEmail, setLoginEmail] = useState('');
@@ -23,14 +23,23 @@ export default function Auth() {
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
   const [loginError, setLoginError] = useState('');
   const [signupError, setSignupError] = useState('');
-  const [activeTab, setActiveTab] = useState<string>(tabParam === 'signup' ? 'signup' : 'login');
+  const [resetError, setResetError] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>(
+    resetParam === 'true' ? 'reset' : (tabParam === 'signup' ? 'signup' : 'login')
+  );
   
   useEffect(() => {
     // Update active tab when URL params change
-    setActiveTab(tabParam === 'signup' ? 'signup' : 'login');
-  }, [tabParam]);
+    if (resetParam === 'true') {
+      setActiveTab('reset');
+    } else {
+      setActiveTab(tabParam === 'signup' ? 'signup' : 'login');
+    }
+  }, [tabParam, resetParam]);
 
   // If user is already logged in, redirect to homepage
   if (user) {
@@ -79,10 +88,35 @@ export default function Auth() {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setResetError('');
+    
+    try {
+      const { error } = await resetPassword(resetEmail);
+      if (!error) {
+        setShowForgotPassword(false);
+        setResetEmail('');
+      }
+    } catch (error: any) {
+      setResetError(error.message || 'An error occurred during password reset');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleTabChange = (value: string) => {
     setActiveTab(value);
+    setShowForgotPassword(false);
     // Update URL to reflect tab change
-    navigate(`/auth${value === 'signup' ? '?tab=signup' : ''}`);
+    if (value === 'signup') {
+      navigate('/auth?tab=signup');
+    } else if (value === 'reset') {
+      navigate('/auth?reset=true');
+    } else {
+      navigate('/auth');
+    }
   };
 
   return (
@@ -95,65 +129,117 @@ export default function Auth() {
         </div>
         
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="login">Login</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            <TabsTrigger value="reset">Reset Password</TabsTrigger>
           </TabsList>
           
           <TabsContent value="login">
             <Card>
-              <form onSubmit={handleLogin}>
-                <CardHeader>
-                  <CardTitle>Login</CardTitle>
-                  <CardDescription>
-                    Enter your email and password to access your account
-                  </CardDescription>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  {loginError && (
-                    <div className="text-sm font-medium text-destructive">{loginError}</div>
-                  )}
+              {!showForgotPassword ? (
+                <form onSubmit={handleLogin}>
+                  <CardHeader>
+                    <CardTitle>Login</CardTitle>
+                    <CardDescription>
+                      Enter your email and password to access your account
+                    </CardDescription>
+                  </CardHeader>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
-                    <Input 
-                      id="login-email" 
-                      type="email" 
-                      placeholder="example@email.com" 
-                      required
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="login-password">Password</Label>
-                      <a href="#" className="text-xs text-usha-burgundy hover:underline">
-                        Forgot password?
-                      </a>
+                  <CardContent className="space-y-4">
+                    {loginError && (
+                      <div className="text-sm font-medium text-destructive">{loginError}</div>
+                    )}
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="login-email">Email</Label>
+                      <Input 
+                        id="login-email" 
+                        type="email" 
+                        placeholder="example@email.com" 
+                        required
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                      />
                     </div>
-                    <Input 
-                      id="login-password" 
-                      type="password" 
-                      required 
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                    />
-                  </div>
-                </CardContent>
-                
-                <CardFooter>
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-usha-burgundy hover:bg-usha-burgundy/90"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? 'Signing in...' : 'Sign In'}
-                  </Button>
-                </CardFooter>
-              </form>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="login-password">Password</Label>
+                        <button 
+                          type="button"
+                          onClick={() => setShowForgotPassword(true)}
+                          className="text-xs text-usha-burgundy hover:underline"
+                        >
+                          Forgot password?
+                        </button>
+                      </div>
+                      <Input 
+                        id="login-password" 
+                        type="password" 
+                        required 
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                      />
+                    </div>
+                  </CardContent>
+                  
+                  <CardFooter>
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-usha-burgundy hover:bg-usha-burgundy/90"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? 'Signing in...' : 'Sign In'}
+                    </Button>
+                  </CardFooter>
+                </form>
+              ) : (
+                <form onSubmit={handleForgotPassword}>
+                  <CardHeader>
+                    <CardTitle>Reset Password</CardTitle>
+                    <CardDescription>
+                      Enter your email address and we'll send you a password reset link
+                    </CardDescription>
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-4">
+                    {resetError && (
+                      <div className="text-sm font-medium text-destructive">{resetError}</div>
+                    )}
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="reset-email">Email</Label>
+                      <Input 
+                        id="reset-email" 
+                        type="email" 
+                        placeholder="example@email.com" 
+                        required
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                      />
+                    </div>
+                  </CardContent>
+                  
+                  <CardFooter className="flex flex-col space-y-2">
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-usha-burgundy hover:bg-usha-burgundy/90"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? 'Sending...' : 'Send Reset Link'}
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant="ghost"
+                      onClick={() => setShowForgotPassword(false)}
+                      className="w-full"
+                    >
+                      Back to Login
+                    </Button>
+                  </CardFooter>
+                </form>
+              )}
             </Card>
           </TabsContent>
           
@@ -238,6 +324,47 @@ export default function Auth() {
                     disabled={isLoading}
                   >
                     {isLoading ? 'Creating Account...' : 'Create Account'}
+                  </Button>
+                </CardFooter>
+              </form>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="reset">
+            <Card>
+              <form onSubmit={handleForgotPassword}>
+                <CardHeader>
+                  <CardTitle>Reset Your Password</CardTitle>
+                  <CardDescription>
+                    Enter your email address and we'll send you a password reset link
+                  </CardDescription>
+                </CardHeader>
+                
+                <CardContent className="space-y-4">
+                  {resetError && (
+                    <div className="text-sm font-medium text-destructive">{resetError}</div>
+                  )}
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-tab-email">Email</Label>
+                    <Input 
+                      id="reset-tab-email" 
+                      type="email" 
+                      placeholder="example@email.com" 
+                      required
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                    />
+                  </div>
+                </CardContent>
+                
+                <CardFooter>
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-usha-burgundy hover:bg-usha-burgundy/90"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Sending Reset Link...' : 'Send Reset Link'}
                   </Button>
                 </CardFooter>
               </form>
