@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import AdminLayout from '@/components/layout/AdminLayout';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import OverviewTab from '@/components/dashboard/OverviewTab';
 import AnalyticsTab from '@/components/dashboard/AnalyticsTab';
@@ -59,7 +58,7 @@ export default function AdminDashboard() {
   }, []);
 
   return (
-    <AdminLayout>
+    <>
       <header className="border-b bg-background p-4">
         <div className="container flex justify-between items-center">
           <h1 className="text-xl font-bold">Dashboard</h1>
@@ -130,6 +129,6 @@ export default function AdminDashboard() {
           </Tabs>
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 }
