@@ -214,7 +214,7 @@ export const carouselSlides = [
     id: 1,
     title: "Finest Collection of Traditional Silk Sarees",
     subtitle: "Explore our exclusive Kanchipuram & Banarasi collection",
-    image: "https://images.unsplash.com/photo-1610189356738-62e33e86eada?q=80&w=1200&auto=format&fit=crop",
+    image: "https://unsplash.com/photos/portrait-of-beautiful-indian-girl-wearing-indian-traditional-dress-young-woman-in-traditional-indian-costume-lehenga-choli-with-fashionable-hairstyle-poses-tWkK51TlsdE",
     buttonText: "Shop Now",
     buttonLink: "/category/silk"
   },
