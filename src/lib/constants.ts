@@ -78,7 +78,7 @@ export const featuredCategories = [
     id: "silk-sarees",
     name: "Silk Sarees",
     description: "Luxurious silk sarees for special occasions",
-    image: "https://images.unsplash.com/photo-1604502130252-20cdd1c80d13?q=80&w=500&auto=format&fit=crop"
+    image: "https://unsplash.com/photos/portrait-of-beautiful-indian-girl-wearing-indian-traditional-dress-young-woman-in-traditional-indian-costume-lehenga-choli-with-fashionable-hairstyle-poses-tWkK51TlsdE"
   },
   {
     id: "cotton-sarees",
