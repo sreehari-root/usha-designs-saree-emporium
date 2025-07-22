@@ -214,7 +214,7 @@ export const carouselSlides = [
     id: 1,
     title: "Finest Collection of Traditional Silk Sarees",
     subtitle: "Explore our exclusive Kanchipuram & Banarasi collection",
-    image: "https://unsplash.com/photos/portrait-of-beautiful-indian-girl-wearing-indian-traditional-dress-young-woman-in-traditional-indian-costume-lehenga-choli-with-fashionable-hairstyle-poses-tWkK51TlsdE",
+    image: "https://unsplash.com/photos/a-woman-in-a-blue-sari-is-holding-her-hands-up-Gv5lANN_WqE",
     buttonText: "Shop Now",
     buttonLink: "/category/silk"
   },
@@ -222,7 +222,7 @@ export const carouselSlides = [
     id: 2,
     title: "Designer Festive Collection",
     subtitle: "Celebrate the season with our exquisite designer wear",
-    image: "https://images.unsplash.com/photo-1603189817218-32a1ec250280?q=80&w=1200&auto=format&fit=crop",
+    image: "https://unsplash.com/photos/a-woman-in-a-red-and-gold-outfit-holding-a-piece-of-cloth-over-her-head-T6F0IrysJjg",
     buttonText: "Discover",
     buttonLink: "/category/festive"
   },
@@ -230,7 +230,7 @@ export const carouselSlides = [
     id: 3,
     title: "Handcrafted Cotton Collections",
     subtitle: "Comfortable, sustainable, and beautifully crafted",
-    image: "https://images.unsplash.com/photo-1604502130252-20cdd1c80d13?q=80&w=1200&auto=format&fit=crop", 
+    image: "https://unsplash.com/photos/portrait-of-beautiful-indian-girl-wearing-indian-traditional-dress-young-woman-in-traditional-indian-costume-lehenga-choli-with-fashionable-hairstyle-poses-tWkK51TlsdE", 
     buttonText: "Browse Collection",
     buttonLink: "/category/cotton"
   }
