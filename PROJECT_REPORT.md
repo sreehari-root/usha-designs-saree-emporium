@@ -317,12 +317,14 @@ The Usha Designs e-commerce platform follows a modern web architecture pattern w
 
 ### 4.2 CONTEXT DIAGRAM
 
-```mermaid
+<lov-mermaid>
 graph TD
     Customer[👤 Customer] 
     Admin[👤 Administrator]
     PaymentGW[💳 Payment Gateway]
     EmailService[📧 Email Service]
+    CDN[🌐 CDN]
+    Database[(🗄️ Database)]
     
     UshaPlatform[🏪 Usha Designs Platform<br/>E-commerce System]
     
@@ -337,7 +339,13 @@ graph TD
     
     UshaPlatform -->|Order Confirmations<br/>Notifications<br/>Password Resets| EmailService
     EmailService -->|Delivery Status<br/>Email Responses| UshaPlatform
-```
+    
+    UshaPlatform -->|Store/Retrieve Data| Database
+    Database -->|Data| UshaPlatform
+    
+    UshaPlatform -->|Static Assets| CDN
+    CDN -->|Fast Content Delivery| Customer
+</lov-mermaid>
 
 ---
 
@@ -345,172 +353,625 @@ graph TD
 
 ### 5.1 USE CASE DIAGRAM
 
-```mermaid
+<lov-mermaid>
 graph TD
     Customer((Customer))
     Admin((Administrator))
+    Guest((Guest User))
     
     subgraph "Usha Designs E-commerce System"
-        Register[Register Account]
-        Login[Login]
-        BrowseProducts[Browse Products]
-        SearchProducts[Search Products]
-        ViewProduct[View Product Details]
-        AddToCart[Add to Cart]
-        AddToWishlist[Add to Wishlist]
-        Checkout[Checkout]
-        TrackOrder[Track Order]
-        LeaveReview[Leave Review]
-        ManageProfile[Manage Profile]
+        subgraph "Authentication"
+            Register[Register Account]
+            Login[Login/Logout]
+            ResetPassword[Reset Password]
+        end
         
-        ManageProducts[Manage Products]
-        ManageOrders[Manage Orders]
-        ManageCustomers[Manage Customers]
-        ViewAnalytics[View Analytics]
-        ManageInventory[Manage Inventory]
+        subgraph "Product Management"
+            BrowseProducts[Browse Products]
+            SearchProducts[Search Products]
+            FilterProducts[Filter Products]
+            ViewProduct[View Product Details]
+            AddProducts[Add Products]
+            EditProducts[Edit Products]
+            DeleteProducts[Delete Products]
+        end
+        
+        subgraph "Shopping"
+            AddToCart[Add to Cart]
+            ManageCart[Manage Cart]
+            AddToWishlist[Add to Wishlist]
+            ManageWishlist[Manage Wishlist]
+            Checkout[Checkout]
+            ProcessPayment[Process Payment]
+        end
+        
+        subgraph "Order Management"
+            PlaceOrder[Place Order]
+            TrackOrder[Track Order]
+            ViewOrderHistory[View Order History]
+            ManageOrders[Manage Orders]
+            UpdateOrderStatus[Update Order Status]
+        end
+        
+        subgraph "User Management"
+            ManageProfile[Manage Profile]
+            ManageCustomers[Manage Customers]
+            ViewCustomerDetails[View Customer Details]
+        end
+        
+        subgraph "Reviews & Feedback"
+            LeaveReview[Leave Review]
+            ManageReviews[Manage Reviews]
+            ViewReviews[View Reviews]
+        end
+        
+        subgraph "Analytics & Reports"
+            ViewAnalytics[View Analytics]
+            GenerateReports[Generate Reports]
+            ViewDashboard[View Dashboard]
+        end
     end
     
-    Customer --> Register
+    %% Guest User Use Cases
+    Guest --> BrowseProducts
+    Guest --> SearchProducts
+    Guest --> FilterProducts
+    Guest --> ViewProduct
+    Guest --> Register
+    Guest --> Login
+    
+    %% Customer Use Cases
     Customer --> Login
     Customer --> BrowseProducts
     Customer --> SearchProducts
+    Customer --> FilterProducts
     Customer --> ViewProduct
     Customer --> AddToCart
+    Customer --> ManageCart
     Customer --> AddToWishlist
+    Customer --> ManageWishlist
     Customer --> Checkout
+    Customer --> ProcessPayment
+    Customer --> PlaceOrder
     Customer --> TrackOrder
+    Customer --> ViewOrderHistory
     Customer --> LeaveReview
+    Customer --> ViewReviews
     Customer --> ManageProfile
+    Customer --> ResetPassword
     
+    %% Admin Use Cases
     Admin --> Login
-    Admin --> ManageProducts
+    Admin --> AddProducts
+    Admin --> EditProducts
+    Admin --> DeleteProducts
     Admin --> ManageOrders
+    Admin --> UpdateOrderStatus
     Admin --> ManageCustomers
+    Admin --> ViewCustomerDetails
+    Admin --> ManageReviews
     Admin --> ViewAnalytics
-    Admin --> ManageInventory
-```
+    Admin --> GenerateReports
+    Admin --> ViewDashboard
+</lov-mermaid>
 
 ### 5.2 SEQUENCE DIAGRAMS
 
 **Customer Purchase Flow:**
 
-```mermaid
+<lov-mermaid>
 sequenceDiagram
     participant C as Customer
     participant UI as Frontend
     participant API as Supabase API
     participant DB as Database
     participant PG as Payment Gateway
+    participant EMAIL as Email Service
+    
+    Note over C,EMAIL: Customer Purchase Journey
     
     C->>UI: Browse Products
     UI->>API: GET /products
-    API->>DB: Query products
+    API->>DB: Query products table
     DB-->>API: Product data
-    API-->>UI: Product list
+    API-->>UI: Product list with images
     UI-->>C: Display products
     
     C->>UI: Add to Cart
-    UI->>API: POST /cart
-    API->>DB: Update cart
-    DB-->>API: Confirmation
-    API-->>UI: Success
+    UI->>API: POST /cart-items
+    API->>DB: Insert cart item
+    DB-->>API: Cart item created
+    API-->>UI: Success response
+    UI-->>C: Cart updated notification
     
-    C->>UI: Checkout
+    C->>UI: Proceed to Checkout
     UI->>API: POST /orders
-    API->>DB: Create order
-    API->>PG: Process payment
-    PG-->>API: Payment status
+    API->>DB: Create order record
+    DB-->>API: Order ID generated
+    
+    API->>PG: Initialize payment
+    PG-->>API: Payment token
+    API-->>UI: Payment form
+    UI-->>C: Payment interface
+    
+    C->>UI: Submit payment
+    UI->>PG: Process payment
+    PG-->>API: Payment confirmed
     API->>DB: Update order status
+    API->>DB: Update inventory
+    
+    API->>EMAIL: Send order confirmation
+    EMAIL-->>C: Confirmation email
+    
     API-->>UI: Order confirmation
-    UI-->>C: Success message
-```
+    UI-->>C: Success page with order details
+</lov-mermaid>
+
+**Admin Order Management Flow:**
+
+<lov-mermaid>
+sequenceDiagram
+    participant A as Admin
+    participant UI as Admin Dashboard
+    participant API as Supabase API
+    participant DB as Database
+    participant EMAIL as Email Service
+    participant CUSTOMER as Customer
+    
+    A->>UI: Access Orders Dashboard
+    UI->>API: GET /orders
+    API->>DB: Query orders with customer details
+    DB-->>API: Orders data
+    API-->>UI: Orders list
+    UI-->>A: Display orders table
+    
+    A->>UI: Update order status
+    UI->>API: PATCH /orders/{id}
+    API->>DB: Update order status
+    DB-->>API: Status updated
+    
+    alt Status is "Shipped"
+        API->>EMAIL: Send tracking email
+        EMAIL-->>CUSTOMER: Tracking information
+    else Status is "Delivered"
+        API->>EMAIL: Send delivery confirmation
+        EMAIL-->>CUSTOMER: Delivery notification
+    end
+    
+    API-->>UI: Update confirmation
+    UI-->>A: Status change reflected
+</lov-mermaid>
+
+**User Authentication Flow:**
+
+<lov-mermaid>
+sequenceDiagram
+    participant U as User
+    participant UI as Frontend
+    participant AUTH as Supabase Auth
+    participant DB as Database
+    participant EMAIL as Email Service
+    
+    Note over U,EMAIL: Registration Process
+    
+    U->>UI: Fill registration form
+    UI->>AUTH: Sign up with email/password
+    AUTH->>EMAIL: Send verification email
+    EMAIL-->>U: Verification link
+    
+    U->>EMAIL: Click verification link
+    EMAIL->>AUTH: Verify email token
+    AUTH->>DB: Create user profile
+    DB-->>AUTH: Profile created
+    AUTH-->>UI: Registration complete
+    
+    Note over U,EMAIL: Login Process
+    
+    U->>UI: Enter credentials
+    UI->>AUTH: Sign in request
+    AUTH->>AUTH: Validate credentials
+    AUTH-->>UI: JWT token + user data
+    UI->>DB: Fetch user profile
+    DB-->>UI: Profile data
+    UI-->>U: Dashboard access granted
+</lov-mermaid>
 
 ### 5.3 COLLABORATION DIAGRAMS
 
 **Product Management Collaboration:**
 
-```mermaid
-graph LR
-    A[Administrator] -->|manages| B[Product Controller]
-    B -->|validates| C[Product Service]
-    C -->|stores| D[Database]
-    C -->|uploads| E[Image Storage]
-    B -->|notifies| F[Notification Service]
-    F -->|sends| G[Email Service]
-```
+<lov-mermaid>
+graph TB
+    Admin[Administrator] -->|1: Add Product| ProductController[Product Controller]
+    ProductController -->|2: Validate Data| ProductService[Product Service]
+    ProductService -->|3: Store Product| Database[(Database)]
+    ProductService -->|4: Upload Images| ImageStorage[Image Storage]
+    ProductController -->|5: Send Notification| NotificationService[Notification Service]
+    NotificationService -->|6: Email Alert| EmailService[Email Service]
+    EmailService -->|7: Confirmation| Admin
+    
+    Customer[Customer] -->|8: Browse Products| ProductController
+    ProductController -->|9: Fetch Products| ProductService
+    ProductService -->|10: Query Data| Database
+    Database -->|11: Product Data| ProductService
+    ProductService -->|12: Get Images| ImageStorage
+    ImageStorage -->|13: Image URLs| ProductService
+    ProductService -->|14: Product List| ProductController
+    ProductController -->|15: Display Products| Customer
+</lov-mermaid>
+
+**Order Processing Collaboration:**
+
+<lov-mermaid>
+graph TB
+    Customer[Customer] -->|1: Place Order| OrderController[Order Controller]
+    OrderController -->|2: Validate Cart| CartService[Cart Service]
+    CartService -->|3: Check Items| Database[(Database)]
+    
+    OrderController -->|4: Process Payment| PaymentService[Payment Service]
+    PaymentService -->|5: Charge Card| PaymentGateway[Payment Gateway]
+    PaymentGateway -->|6: Payment Result| PaymentService
+    
+    PaymentService -->|7: Payment Success| OrderController
+    OrderController -->|8: Create Order| OrderService[Order Service]
+    OrderService -->|9: Save Order| Database
+    OrderService -->|10: Update Inventory| InventoryService[Inventory Service]
+    InventoryService -->|11: Reduce Stock| Database
+    
+    OrderController -->|12: Send Confirmation| EmailService[Email Service]
+    EmailService -->|13: Order Email| Customer
+    EmailService -->|14: Order Alert| Admin[Administrator]
+</lov-mermaid>
+
+**User Authentication Collaboration:**
+
+<lov-mermaid>
+graph TB
+    User[User] -->|1: Login Request| AuthController[Auth Controller]
+    AuthController -->|2: Validate Credentials| AuthService[Auth Service]
+    AuthService -->|3: Check User| Database[(Database)]
+    Database -->|4: User Data| AuthService
+    
+    AuthService -->|5: Generate Token| TokenService[Token Service]
+    TokenService -->|6: JWT Token| AuthService
+    AuthService -->|7: Token Response| AuthController
+    AuthController -->|8: Set Session| SessionManager[Session Manager]
+    
+    SessionManager -->|9: Store Session| Database
+    AuthController -->|10: Login Success| User
+    
+    User -->|11: Authenticated Request| AuthMiddleware[Auth Middleware]
+    AuthMiddleware -->|12: Verify Token| TokenService
+    TokenService -->|13: Token Valid| AuthMiddleware
+    AuthMiddleware -->|14: Allow Access| RequestHandler[Request Handler]
+</lov-mermaid>
 
 ### 5.4 ACTIVITY DIAGRAM
 
-**Order Processing Activity:**
+**Customer Order Processing Activity:**
 
-```mermaid
-graph TD
-    Start([Customer places order])
-    ValidateCart{Validate cart items}
-    CheckStock{Check inventory}
-    ProcessPayment[Process payment]
-    PaymentSuccess{Payment successful?}
-    CreateOrder[Create order record]
-    UpdateInventory[Update inventory]
-    SendConfirmation[Send confirmation email]
-    NotifyAdmin[Notify administrator]
-    End([Order completed])
+<lov-mermaid>
+flowchart TD
+    Start([Customer visits website]) --> Browse[Browse products]
+    Browse --> Select[Select product]
+    Select --> AddCart{Add to cart?}
+    AddCart -->|Yes| Cart[Add to cart]
+    AddCart -->|No| Continue[Continue browsing]
+    Continue --> Browse
+    Cart --> MoreItems{Add more items?}
+    MoreItems -->|Yes| Browse
+    MoreItems -->|No| Checkout[Proceed to checkout]
     
-    ErrorCart[Display cart errors]
-    ErrorStock[Display stock error]
-    ErrorPayment[Display payment error]
+    Checkout --> Login{User logged in?}
+    Login -->|No| Register[Register/Login]
+    Register --> Checkout
+    Login -->|Yes| ValidateCart{Validate cart}
     
-    Start --> ValidateCart
-    ValidateCart -->|Invalid| ErrorCart
-    ValidateCart -->|Valid| CheckStock
-    CheckStock -->|Out of stock| ErrorStock
-    CheckStock -->|Available| ProcessPayment
-    ProcessPayment --> PaymentSuccess
-    PaymentSuccess -->|Failed| ErrorPayment
-    PaymentSuccess -->|Success| CreateOrder
-    CreateOrder --> UpdateInventory
-    UpdateInventory --> SendConfirmation
-    SendConfirmation --> NotifyAdmin
-    NotifyAdmin --> End
-```
+    ValidateCart -->|Invalid items| ErrorCart[Show cart errors]
+    ErrorCart --> Cart
+    ValidateCart -->|Valid| CheckStock{Check inventory}
+    CheckStock -->|Out of stock| ErrorStock[Show stock error]
+    ErrorStock --> Cart
+    CheckStock -->|Available| Address[Enter shipping address]
+    
+    Address --> Payment[Enter payment details]
+    Payment --> ProcessPayment[Process payment]
+    ProcessPayment --> PaymentResult{Payment successful?}
+    PaymentResult -->|Failed| ErrorPayment[Payment error]
+    ErrorPayment --> Payment
+    PaymentResult -->|Success| CreateOrder[Create order]
+    
+    CreateOrder --> UpdateInventory[Update inventory]
+    UpdateInventory --> SendConfirmation[Send confirmation email]
+    SendConfirmation --> NotifyAdmin[Notify admin]
+    NotifyAdmin --> OrderComplete([Order completed])
+    
+    style Start fill:#e1f5fe
+    style OrderComplete fill:#c8e6c9
+    style ErrorCart fill:#ffcdd2
+    style ErrorStock fill:#ffcdd2
+    style ErrorPayment fill:#ffcdd2
+</lov-mermaid>
+
+**Admin Product Management Activity:**
+
+<lov-mermaid>
+flowchart TD
+    AdminLogin([Admin login]) --> Dashboard[Access dashboard]
+    Dashboard --> ProductMgmt{Product management}
+    ProductMgmt --> AddProduct[Add new product]
+    ProductMgmt --> EditProduct[Edit existing product]
+    ProductMgmt --> DeleteProduct[Delete product]
+    
+    AddProduct --> EnterDetails[Enter product details]
+    EnterDetails --> UploadImages[Upload product images]
+    UploadImages --> SetCategory[Set category]
+    SetCategory --> ValidateProduct{Validate input?}
+    ValidateProduct -->|Invalid| ErrorValidation[Show validation errors]
+    ErrorValidation --> EnterDetails
+    ValidateProduct -->|Valid| SaveProduct[Save product]
+    
+    EditProduct --> SelectProduct[Select product to edit]
+    SelectProduct --> ModifyDetails[Modify details]
+    ModifyDetails --> ValidateChanges{Validate changes?}
+    ValidateChanges -->|Invalid| ErrorEdit[Show errors]
+    ErrorEdit --> ModifyDetails
+    ValidateChanges -->|Valid| UpdateProduct[Update product]
+    
+    DeleteProduct --> ConfirmDelete{Confirm deletion?}
+    ConfirmDelete -->|No| Dashboard
+    ConfirmDelete -->|Yes| CheckOrders{Has pending orders?}
+    CheckOrders -->|Yes| ErrorDelete[Cannot delete - has orders]
+    ErrorDelete --> Dashboard
+    CheckOrders -->|No| RemoveProduct[Remove product]
+    
+    SaveProduct --> Success[Success notification]
+    UpdateProduct --> Success
+    RemoveProduct --> Success
+    Success --> Dashboard
+    
+    style AdminLogin fill:#e1f5fe
+    style Success fill:#c8e6c9
+    style ErrorValidation fill:#ffcdd2
+    style ErrorEdit fill:#ffcdd2
+    style ErrorDelete fill:#ffcdd2
+</lov-mermaid>
+
+**Customer Authentication Activity:**
+
+<lov-mermaid>
+flowchart TD
+    StartAuth([User visits site]) --> CheckAuth{Logged in?}
+    CheckAuth -->|Yes| AuthenticatedFlow[Access protected features]
+    CheckAuth -->|No| GuestFlow[Browse as guest]
+    
+    GuestFlow --> NeedsAuth{Needs authentication?}
+    NeedsAuth -->|No| ContinueBrowsing[Continue browsing]
+    NeedsAuth -->|Yes| AuthChoice{Login or Register?}
+    
+    AuthChoice -->|Login| LoginForm[Enter login credentials]
+    AuthChoice -->|Register| RegisterForm[Fill registration form]
+    
+    LoginForm --> ValidateLogin{Valid credentials?}
+    ValidateLogin -->|No| LoginError[Show login error]
+    LoginError --> LoginForm
+    ValidateLogin -->|Yes| LoginSuccess[Login successful]
+    
+    RegisterForm --> ValidateRegister{Valid registration?}
+    ValidateRegister -->|No| RegisterError[Show validation errors]
+    RegisterError --> RegisterForm
+    ValidateRegister -->|Yes| SendVerification[Send verification email]
+    SendVerification --> VerifyEmail[User verifies email]
+    VerifyEmail --> RegisterSuccess[Registration complete]
+    
+    LoginSuccess --> AuthenticatedFlow
+    RegisterSuccess --> AuthenticatedFlow
+    
+    AuthenticatedFlow --> UserActions[Access cart, orders, profile]
+    UserActions --> Logout{Logout?}
+    Logout -->|Yes| LogoutProcess[Clear session]
+    LogoutProcess --> StartAuth
+    Logout -->|No| ContinueAuth[Continue as authenticated]
+    ContinueAuth --> UserActions
+    
+    style StartAuth fill:#e1f5fe
+    style LoginSuccess fill:#c8e6c9
+    style RegisterSuccess fill:#c8e6c9
+    style LoginError fill:#ffcdd2
+    style RegisterError fill:#ffcdd2
+</lov-mermaid>
 
 ### 5.5 DATABASE DESIGN
 
 **Entity Relationship Diagram:**
 
-```mermaid
+<lov-mermaid>
 erDiagram
-    USERS ||--o{ ORDERS : places
-    USERS ||--o{ REVIEWS : writes
-    USERS ||--o{ CART_ITEMS : has
-    USERS ||--o{ WISHLIST_ITEMS : saves
-    
-    PRODUCTS ||--o{ ORDER_ITEMS : contains
-    PRODUCTS ||--o{ REVIEWS : receives
-    PRODUCTS ||--o{ CART_ITEMS : added_to
-    PRODUCTS ||--o{ WISHLIST_ITEMS : saved_in
-    PRODUCTS }o--|| CATEGORIES : belongs_to
-    PRODUCTS ||--o{ PRODUCT_IMAGES : has
-    
-    ORDERS ||--o{ ORDER_ITEMS : contains
-    
-    USERS {
-        uuid id PK
-        string email UK
-        string password_hash
-        string full_name
+    %% Core User Management
+    PROFILES {
+        uuid id PK "User ID from auth.users"
+        string first_name
+        string last_name
         string phone
         text address
         timestamp created_at
         timestamp updated_at
-        string role
+    }
+    
+    USER_ROLES {
+        uuid id PK
+        uuid user_id FK
+        enum role "admin, user"
+        timestamp created_at
+    }
+    
+    %% Product Catalog
+    CATEGORIES {
+        uuid id PK
+        string name UK
+        timestamp created_at
+        timestamp updated_at
     }
     
     PRODUCTS {
         uuid id PK
         string name
         text description
-        decimal price
+        integer price "Price in cents"
+        uuid category_id FK
+        string image "Main product image"
+        integer stock
+        integer discount
+        boolean featured
+        boolean bestseller
+        numeric rating
+        integer sales_count
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    PRODUCT_IMAGES {
+        uuid id PK
+        uuid product_id FK
+        string image_url
+        integer display_order
+        timestamp created_at
+    }
+    
+    %% Shopping Cart
+    CARTS {
+        uuid id PK
+        uuid user_id FK "Nullable for guest carts"
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    CART_ITEMS {
+        uuid id PK
+        uuid cart_id FK
+        uuid product_id FK
+        integer quantity
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    %% Order Management
+    ORDERS {
+        uuid id PK
+        uuid user_id FK
+        integer total "Total in cents"
+        string status "pending, processing, shipped, completed, cancelled"
+        jsonb shipping_address
+        string payment_intent "Stripe payment intent ID"
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    ORDER_ITEMS {
+        uuid id PK
+        uuid order_id FK
+        uuid product_id FK
+        integer quantity
+        integer price "Price at time of order"
+        timestamp created_at
+    }
+    
+    %% Reviews and Ratings
+    REVIEWS {
+        uuid id PK
+        uuid user_id FK
+        uuid product_id FK
+        integer rating "1-5 scale"
+        text comment
+        string status "pending, approved, rejected"
+        timestamp created_at
+    }
+    
+    %% Wishlist
+    WISHLISTS {
+        uuid id PK
+        uuid user_id FK
+        uuid product_id FK
+        timestamp created_at
+    }
+    
+    %% Relationships
+    PROFILES ||--o{ USER_ROLES : has
+    PROFILES ||--o{ CARTS : owns
+    PROFILES ||--o{ ORDERS : places
+    PROFILES ||--o{ REVIEWS : writes
+    PROFILES ||--o{ WISHLISTS : maintains
+    
+    CATEGORIES ||--o{ PRODUCTS : contains
+    PRODUCTS ||--o{ PRODUCT_IMAGES : has
+    PRODUCTS ||--o{ CART_ITEMS : added_to
+    PRODUCTS ||--o{ ORDER_ITEMS : included_in
+    PRODUCTS ||--o{ REVIEWS : receives
+    PRODUCTS ||--o{ WISHLISTS : saved_in
+    
+    CARTS ||--o{ CART_ITEMS : contains
+    ORDERS ||--o{ ORDER_ITEMS : contains
+</lov-mermaid>
+
+**Database Schema Relationships:**
+
+<lov-mermaid>
+graph TB
+    subgraph "Authentication Layer"
+        AuthUsers[auth.users<br/>Supabase Managed]
+        Profiles[profiles<br/>User Details]
+        UserRoles[user_roles<br/>Role Management]
+    end
+    
+    subgraph "Product Catalog"
+        Categories[categories<br/>Product Categories]
+        Products[products<br/>Product Information]
+        ProductImages[product_images<br/>Product Gallery]
+    end
+    
+    subgraph "Shopping Experience"
+        Carts[carts<br/>Shopping Carts]
+        CartItems[cart_items<br/>Cart Contents]
+        Wishlists[wishlists<br/>Saved Items]
+    end
+    
+    subgraph "Order Management"
+        Orders[orders<br/>Customer Orders]
+        OrderItems[order_items<br/>Order Details]
+    end
+    
+    subgraph "Social Features"
+        Reviews[reviews<br/>Product Reviews]
+    end
+    
+    %% Relationships
+    AuthUsers -.->|user_id| Profiles
+    Profiles -->|user_id| UserRoles
+    Profiles -->|user_id| Carts
+    Profiles -->|user_id| Orders
+    Profiles -->|user_id| Reviews
+    Profiles -->|user_id| Wishlists
+    
+    Categories -->|category_id| Products
+    Products -->|product_id| ProductImages
+    Products -->|product_id| CartItems
+    Products -->|product_id| OrderItems
+    Products -->|product_id| Reviews
+    Products -->|product_id| Wishlists
+    
+    Carts -->|cart_id| CartItems
+    Orders -->|order_id| OrderItems
+    
+    style AuthUsers fill:#e3f2fd
+    style Profiles fill:#f3e5f5
+    style UserRoles fill:#f3e5f5
+    style Categories fill:#e8f5e8
+    style Products fill:#e8f5e8
+    style ProductImages fill:#e8f5e8
+    style Orders fill:#fff3e0
+    style OrderItems fill:#fff3e0
+    style Reviews fill:#fce4ec
+</lov-mermaid>
         integer stock_quantity
         uuid category_id FK
         boolean is_active
