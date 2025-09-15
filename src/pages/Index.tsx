@@ -34,7 +34,7 @@ export default function Index() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="relative h-72 overflow-hidden rounded-lg group">
             <img 
-              src="https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=1200&auto=format&fit=crop" 
+              src="https://images.unsplash.com/photo-1597983073453-ef06cfc2240e?q=80&w=1200&auto=format&fit=crop" 
               alt="New Arrivals" 
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
@@ -52,7 +52,7 @@ export default function Index() {
           
           <div className="relative h-72 overflow-hidden rounded-lg group">
             <img 
-              src="https://images.unsplash.com/photo-1597983073453-ef06cfc2240e?q=80&w=1200&auto=format&fit=crop" 
+              src="https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=1200&auto=format&fit=crop" 
               alt="Bridal Collection" 
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
