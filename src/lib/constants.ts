@@ -214,7 +214,7 @@ export const carouselSlides = [
     id: 1,
     title: "Finest Collection of Traditional Silk Sarees",
     subtitle: "Explore our exclusive Kanchipuram & Banarasi collection",
-    image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=1200&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=1200&auto=format&fit=crop",
     buttonText: "Shop Now",
     buttonLink: "/category/silk"
   },
