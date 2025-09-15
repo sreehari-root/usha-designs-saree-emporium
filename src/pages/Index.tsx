@@ -52,7 +52,7 @@ export default function Index() {
           
           <div className="relative h-72 overflow-hidden rounded-lg group">
             <img 
-              src="https://media.istockphoto.com/id/1925218228/photo/stunning-indian-bride-dressed-in-traditional-bridal-lehenga-with-heavy-gold-jewellery-and.jpg?s=612x612&w=0&k=20&c=3sSg6NwuKoDU-C27tQ2jTP3Gq_h7JDZn5oFWzkCggYc=?q=80&w=1200&auto=format&fit=crop" 
+              src="https://images.unsplash.com/photo-1597983073453-ef06cfc2240e?q=80&w=1200&auto=format&fit=crop" 
               alt="Bridal Collection" 
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
