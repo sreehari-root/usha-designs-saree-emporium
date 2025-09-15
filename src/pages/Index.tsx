@@ -52,7 +52,7 @@ export default function Index() {
           
           <div className="relative h-72 overflow-hidden rounded-lg group">
             <img 
-              src="https://images.unsplash.com/photo-1603189817218-32a1ec250280?q=80&w=1200&auto=format&fit=crop" 
+              src="https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?q=80&w=1200&auto=format&fit=crop" 
               alt="Bridal Collection" 
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
