@@ -84,7 +84,7 @@ export const featuredCategories = [
     id: "cotton-sarees",
     name: "Cotton Sarees",
     description: "Comfortable handloom cotton for everyday elegance",
-    image: "https://images.unsplash.com/photo-1581084324492-c5bd05cbd1a4?q=80&w=500&auto=format&fit=crop"
+    image: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=1200&auto=format&fit=crop"
   },
   {
     id: "designer-sets",
