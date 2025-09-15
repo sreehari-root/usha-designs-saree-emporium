@@ -214,7 +214,7 @@ export const carouselSlides = [
     id: 1,
     title: "Finest Collection of Traditional Silk Sarees",
     subtitle: "Explore our exclusive Kanchipuram & Banarasi collection",
-    image: "https://unsplash.com/photos/a-woman-in-a-blue-sari-is-holding-her-hands-up-Gv5lANN_WqE",
+    image: "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?q=80&w=1200&auto=format&fit=crop",
     buttonText: "Shop Now",
     buttonLink: "/category/silk"
   },
@@ -222,7 +222,7 @@ export const carouselSlides = [
     id: 2,
     title: "Designer Festive Collection",
     subtitle: "Celebrate the season with our exquisite designer wear",
-    image: "https://unsplash.com/photos/a-woman-in-a-red-and-gold-outfit-holding-a-piece-of-cloth-over-her-head-T6F0IrysJjg",
+    image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=1200&auto=format&fit=crop",
     buttonText: "Discover",
     buttonLink: "/category/festive"
   },
@@ -230,7 +230,7 @@ export const carouselSlides = [
     id: 3,
     title: "Handcrafted Cotton Collections",
     subtitle: "Comfortable, sustainable, and beautifully crafted",
-    image: "https://unsplash.com/photos/portrait-of-beautiful-indian-girl-wearing-indian-traditional-dress-young-woman-in-traditional-indian-costume-lehenga-choli-with-fashionable-hairstyle-poses-tWkK51TlsdE", 
+    image: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=1200&auto=format&fit=crop", 
     buttonText: "Browse Collection",
     buttonLink: "/category/cotton"
   }
